@@ -1,0 +1,21 @@
+CREATE TABLE "artists" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(255) NOT NULL,
+	"city" varchar(255) NOT NULL,
+	"lat" real NOT NULL,
+	"lng" real NOT NULL,
+	"genres" text[] NOT NULL,
+	"song_title" varchar(255) NOT NULL,
+	"spotify_track_id" varchar(255),
+	"original_image" varchar(255),
+	"small_image" varchar(255),
+	"youtube_url" varchar(255),
+	"instagram_url" varchar(255),
+	"twitter_url" varchar(255),
+	"facebook_url" varchar(255),
+	"youtube_channel_url" varchar(255),
+	"tiktok_url" varchar(255),
+	"prefecture" varchar(255) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
