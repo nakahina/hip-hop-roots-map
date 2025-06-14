@@ -25,6 +25,19 @@ export async function getArtistsByLocation(
     );
 }
 
+export async function getArtistsWithLocation() {
+  return db
+    .select()
+    .from(artists)
+    .where(
+      and(
+        sql`${artists.lat} IS NOT NULL`,
+        sql`${artists.lng} IS NOT NULL`,
+        sql`NOT (${artists.lat} = 0 AND ${artists.lng} = 0)`
+      )
+    );
+}
+
 export async function createArtist(artist: typeof artists.$inferInsert) {
   return db.insert(artists).values(artist).returning();
 }

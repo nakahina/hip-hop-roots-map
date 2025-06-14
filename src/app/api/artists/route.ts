@@ -1,44 +1,104 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { artists } from "@/db/schema";
-import { eq, like, and, asc, desc, sql, ilike } from "drizzle-orm";
+import {
+  getAllArtists,
+  updateArtist,
+  deleteArtist,
+  createArtist,
+  getArtistsWithLocation,
+} from "@/db/queries";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const searchTerm = searchParams.get("search") || "";
-    const selectedStyle = searchParams.get("style") || "all";
-    const sortOrder = searchParams.get("sort") || "name";
+    const withLocation = searchParams.get("withLocation") === "true";
+    const search = searchParams.get("search") || "";
+    const style = searchParams.get("style") || "all";
+    const sort = searchParams.get("sort") || "name";
 
-    // 検索条件の構築
-    const conditions = [];
-    if (searchTerm) {
-      conditions.push(ilike(artists.name, `%${searchTerm}%`));
-    }
-    if (selectedStyle !== "all") {
-      conditions.push(
-        sql`${artists.genres} && ARRAY[${selectedStyle}]::text[]`
+    let artists = withLocation
+      ? await getArtistsWithLocation()
+      : await getAllArtists();
+
+    // 検索クエリでフィルタリング
+    if (search) {
+      artists = artists.filter((artist) =>
+        artist.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
-    // ソート順の設定
-    const orderByClause =
-      sortOrder === "prefecture"
-        ? sql`${artists.prefecture}, ${artists.name}`
-        : sql`${artists.name}`;
+    // スタイルでフィルタリング
+    if (style !== "all") {
+      artists = artists.filter((artist) =>
+        artist.genres?.some(
+          (genre) => genre.toLowerCase() === style.toLowerCase()
+        )
+      );
+    }
 
-    // クエリの実行
-    const filteredArtists = await db
-      .select()
-      .from(artists)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(orderByClause);
+    // 並び替え
+    if (sort === "name") {
+      artists.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === "prefecture") {
+      artists.sort((a, b) => {
+        const prefectureA = a.city?.split(" ")[0] || "";
+        const prefectureB = b.city?.split(" ")[0] || "";
+        return prefectureA.localeCompare(prefectureB);
+      });
+    }
 
-    return NextResponse.json(filteredArtists);
+    return NextResponse.json(artists);
   } catch (error) {
-    console.error("Error fetching artists:", error);
     return NextResponse.json(
       { error: "Failed to fetch artists" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { id, createdAt, updatedAt, ...artist } = await request.json();
+    const updatedArtist = await updateArtist(id, {
+      ...artist,
+      updatedAt: new Date(),
+    });
+    return NextResponse.json(updatedArtist);
+  } catch (error) {
+    console.error("API PUT error:", error);
+    return NextResponse.json(
+      { error: "Failed to update artist", detail: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { id } = await request.json();
+    await deleteArtist(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to delete artist" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const artist = await request.json();
+    const now = new Date();
+    const newArtist = await createArtist({
+      ...artist,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return NextResponse.json(newArtist);
+  } catch (error) {
+    console.error("API POST error:", error);
+    return NextResponse.json(
+      { error: "Failed to create artist", detail: String(error) },
       { status: 500 }
     );
   }
