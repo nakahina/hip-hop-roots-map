@@ -1,19 +1,13 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl:
-    process.env.DB_SSL === "true"
-      ? {
-          rejectUnauthorized: false,
-        }
-      : false,
-});
+const connectionString = process.env.DATABASE_URL;
 
-export const db = drizzle(pool, { schema });
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+// Disable prefetch as it is not supported for "Transaction" pool mode
+const client = postgres(connectionString, { prepare: false });
+export const db = drizzle(client, { schema });
