@@ -13,7 +13,6 @@
     "db:seed": "tsc src/db/seed.ts --outDir dist/db && node dist/db/seed.js"
   },
   "dependencies": {
-    "@auth/core": "^0.39.1",
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.10.5",
@@ -25,8 +24,7 @@
     "framer-motion": "^6.5.1",
     "leaflet": "^1.9.4",
     "next": "13.4.10",
-    "next-auth": "^4.24.11",
-    "nodemailer": "^7.0.3",
+    "nodemailer": "^6.10.1",
     "pg": "^8.16.0",
     "qs": "^6.14.0",
     "react": "18.2.0",
