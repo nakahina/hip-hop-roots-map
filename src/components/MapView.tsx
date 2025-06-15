@@ -33,6 +33,7 @@ import {
   Image,
   Tooltip,
   Link,
+  Divider,
 } from "@chakra-ui/react";
 import {
   SearchIcon,
@@ -1544,78 +1545,88 @@ export default function MapView() {
         {isMobile && activeTab === "artists" && renderMobileArtistsList()}
 
         {/* Mobile Menu Drawer */}
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+        <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
           <DrawerOverlay />
-          <DrawerContent bg="gray.900" color="white">
+          <DrawerContent bg="gray.900" color="white" maxW="200px">
             <DrawerCloseButton color="gray.400" />
             <DrawerHeader borderBottomWidth="1px" borderColor="gray.700">
               MENU
             </DrawerHeader>
             <DrawerBody>
-              <VStack spacing={6} align="stretch" mt={6}>
-                <Box>
-                  <Text
-                    fontSize="lg"
-                    fontWeight="bold"
-                    mb={1}
-                    letterSpacing="wider"
-                    cursor="pointer"
-                    onClick={() => {
-                      setShowAbout(true);
-                      setShowContact(false);
-                      onClose();
-                    }}
-                  >
-                    ABOUT
-                  </Text>
-                </Box>
-                <Box>
-                  <Text
-                    fontSize="lg"
-                    fontWeight="bold"
-                    mb={1}
-                    letterSpacing="wider"
-                    cursor="pointer"
-                    onClick={() => {
-                      setShowContact(true);
-                      setShowAbout(false);
-                      onClose();
-                    }}
-                  >
-                    CONTACT
-                  </Text>
-                </Box>
-                <Box>
-                  <Text
-                    fontSize="lg"
-                    fontWeight="bold"
-                    mb={3}
-                    letterSpacing="wider"
-                  >
-                    SHARE
-                  </Text>
-                  <VStack alignItems="flex-start">
-                    <Button
-                      leftIcon={<FaTwitter size={20} />}
-                      size="md"
-                      variant="ghost"
-                      color="gray.400"
-                      _hover={{ color: "#1DA1F2", bg: "gray.700" }}
-                      onClick={() => handleShare("twitter")}
+              <VStack justify="space-between" h="100%" mt={6}>
+                <VStack spacing={6} alignItems="flex-start" w="100%">
+                  <Box>
+                    <Text
+                      fontSize="lg"
+                      fontWeight="bold"
+                      mb={1}
+                      letterSpacing="wider"
+                      cursor="pointer"
+                      onClick={() => {
+                        setShowAbout(true);
+                        setShowContact(false);
+                        onClose();
+                      }}
                     >
-                      Twitter
-                    </Button>
-                    <Button
-                      leftIcon={<FaFacebook size={20} />}
-                      size="md"
-                      variant="ghost"
-                      color="gray.400"
-                      _hover={{ color: "#4267B2", bg: "gray.700" }}
-                      onClick={() => handleShare("facebook")}
+                      ABOUT
+                    </Text>
+                  </Box>
+                  <Box>
+                    <Text
+                      fontSize="lg"
+                      fontWeight="bold"
+                      mb={1}
+                      letterSpacing="wider"
+                      cursor="pointer"
+                      onClick={() => {
+                        setShowContact(true);
+                        setShowAbout(false);
+                        onClose();
+                      }}
                     >
-                      Facebook
-                    </Button>
-                  </VStack>
+                      CONTACT
+                    </Text>
+                  </Box>
+                  <Box>
+                    <Text
+                      fontSize="lg"
+                      fontWeight="bold"
+                      mb={3}
+                      letterSpacing="wider"
+                    >
+                      SHARE
+                    </Text>
+                    <VStack alignItems="flex-start">
+                      <Button
+                        leftIcon={<FaTwitter size={20} />}
+                        size="md"
+                        variant="ghost"
+                        color="gray.400"
+                        _hover={{ color: "#1DA1F2", bg: "gray.700" }}
+                        onClick={() => handleShare("twitter")}
+                      >
+                        Twitter
+                      </Button>
+                      <Button
+                        leftIcon={<FaFacebook size={20} />}
+                        size="md"
+                        variant="ghost"
+                        color="gray.400"
+                        _hover={{ color: "#4267B2", bg: "gray.700" }}
+                        onClick={() => handleShare("facebook")}
+                      >
+                        Facebook
+                      </Button>
+                    </VStack>
+                  </Box>
+                </VStack>
+                <Box mb={10} w="100%">
+                  <Divider w="100%" />
+                  <Box mt={3} w="100%" textAlign="center">
+                    <Text fontSize="sm" color="gray.400">
+                      HIPHOP ROOTS
+                    </Text>
+                  </Box>
                 </Box>
               </VStack>
             </DrawerBody>
