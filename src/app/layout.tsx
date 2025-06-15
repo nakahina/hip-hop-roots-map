@@ -11,7 +11,7 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  title: "HIPHOP MAP",
+  title: "HIPHOP ROOTS",
   description: "世界のラップを地図で聴く",
 };
 

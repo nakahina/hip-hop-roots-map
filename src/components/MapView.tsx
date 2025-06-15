@@ -715,7 +715,8 @@ export default function MapView() {
             </Text>
           </HStack>
           <Text color="gray.300" fontSize="sm" lineHeight="tall">
-            HipHopマップは、ヒップホップカルチャーを形作ってきたアーティストたちの出身地や育った場所を世界地図上にプロットしたサービスです。
+            HIPHOP
+            ROOTSは、ヒップホップカルチャーを形作ってきたアーティストたちの出身地や育った場所を世界地図上にプロットしたサービスです。
             街、地区、国——場所には物語がある。音楽と土地のつながりを感じ、ヒップホップの多様なルーツに触れてください。
           </Text>
           {/* <Text
@@ -725,7 +726,7 @@ export default function MapView() {
             fontSize="sm"
             lineHeight="tall"
           >
-            HipHop Map is a service that plots the hometowns and places where
+            HIPHOP ROOTS is a service that plots the hometowns and places where
             hip-hop artists grew up on a world map, highlighting the roots that
             have shaped hip-hop culture. Cities, neighborhoods, countries—every
             place has its story. Feel the connection between music and place,

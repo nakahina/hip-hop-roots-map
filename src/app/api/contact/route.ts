@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: "nakahina2014@gmail.com",
-      subject: `[HipHop Map] お問い合わせ from ${name}`,
+      subject: `[HIPHOP ROOTS] お問い合わせ from ${name}`,
       text: `
 名前: ${name}
 メールアドレス: ${email}
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 ${message}
       `,
       html: `
-<h2>HipHop Map お問い合わせ</h2>
+<h2>HIPHOP ROOTS お問い合わせ</h2>
 <p><strong>名前:</strong> ${name}</p>
 <p><strong>メールアドレス:</strong> ${email}</p>
 <p><strong>メッセージ:</strong></p>
