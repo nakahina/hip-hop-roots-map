@@ -576,8 +576,8 @@ export default function MapView() {
             _hover={{ borderColor: "gray.600" }}
             _focus={{ borderColor: "purple.500", boxShadow: "none" }}
             _placeholder={{ color: "gray.400" }}
-            fontFamily="Noto Sans JP"
-            fontSize="sm"
+            fontFamily="sans-serif"
+            fontSize="xs"
           />
           <InputRightElement>
             <IconButton

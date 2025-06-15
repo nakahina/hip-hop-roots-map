@@ -95,8 +95,8 @@ export default function ContactForm() {
               _hover={{ borderColor: "gray.500" }}
               _focus={{ borderColor: "yellow.400", boxShadow: "none" }}
               placeholder="Your Name"
-              fontFamily="Noto Sans JP"
-              fontSize="sm"
+              fontFamily="sans-serif"
+              fontSize="xs"
             />
           </FormControl>
 
@@ -113,8 +113,8 @@ export default function ContactForm() {
               _hover={{ borderColor: "gray.500" }}
               _focus={{ borderColor: "yellow.400", boxShadow: "none" }}
               placeholder="Your Email"
-              fontFamily="Noto Sans JP"
-              fontSize="sm"
+              fontFamily="sans-serif"
+              fontSize="xs"
             />
           </FormControl>
 
@@ -131,8 +131,8 @@ export default function ContactForm() {
               _hover={{ borderColor: "gray.500" }}
               _focus={{ borderColor: "yellow.400", boxShadow: "none" }}
               placeholder="Message"
-              fontFamily="Noto Sans JP"
-              fontSize="sm"
+              fontFamily="sans-serif"
+              fontSize="xs"
             />
           </FormControl>
 
