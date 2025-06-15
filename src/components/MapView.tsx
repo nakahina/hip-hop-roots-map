@@ -648,15 +648,17 @@ export default function MapView() {
   const handleShare = (platform: string, artistName?: string) => {
     const url = window.location.href;
     const title = "HIPHOP ROOTS - 世界のラップを地図で聴く";
+    const hashtags = `#HIPHOP #ラップ #HipHopRoots`;
     const text = artistName
       ? `${artistName}の音楽をHIPHOP ROOTSでチェックしよう！`
       : "HIPHOP ROOTSで世界のラップを地図で聴こう！";
+    const tweetText = `${text} ${hashtags}`;
 
     switch (platform) {
       case "twitter":
         window.open(
           `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            text
+            tweetText
           )}&url=${encodeURIComponent(url)}`,
           "_blank"
         );
