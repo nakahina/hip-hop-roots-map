@@ -116,6 +116,7 @@ export default function MapView() {
 
     const currentY = e.touches[0].clientY;
     const deltaY = currentY - touchStartYRef.current;
+    touchEndYRef.current = currentY; // 終了位置を記録
 
     // 上方向へのスワイプは無視
     if (deltaY < 0) return;
