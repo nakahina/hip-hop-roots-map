@@ -6,9 +6,33 @@ import {
   createArtist,
   getArtistsWithLocation,
 } from "@/db/queries";
+import { db } from "@/db";
+import { sql } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
+    // データベース接続のテスト
+    try {
+      await db.execute(sql`SELECT 1`);
+      console.log("Database connection successful");
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      return NextResponse.json(
+        {
+          error: "Database connection failed",
+          detail: dbError instanceof Error ? dbError.message : String(dbError),
+          env: {
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            user: process.env.DB_USER,
+            database: process.env.DB_NAME,
+            ssl: process.env.DB_SSL === "true" ? true : false,
+          },
+        },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const withLocation = searchParams.get("withLocation") === "true";
     const search = searchParams.get("search") || "";
@@ -48,8 +72,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json(artists);
   } catch (error) {
+    console.error("API GET error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch artists" },
+      {
+        error: "Failed to fetch artists",
+        detail: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
