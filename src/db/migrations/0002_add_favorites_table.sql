@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS favorites (
+  id SERIAL PRIMARY KEY,
+  artist_id INTEGER NOT NULL REFERENCES artists(id),
+  user_id VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+); 

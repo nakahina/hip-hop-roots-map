@@ -404,7 +404,7 @@ export default function ArtistsAdminPage() {
             {isEditMode ? "アーティスト編集" : selectedArtist?.name}
           </ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
+          <ModalBody fontFamily="Noto Sans JP">
             {isEditMode && editArtist ? (
               <Stack
                 spacing={3}

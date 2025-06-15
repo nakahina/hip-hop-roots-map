@@ -64,6 +64,15 @@ body {
   animation: ripple 1.5s infinite;
   opacity: 1;
 }
+
+/* スマートフォン表示時のリップルアニメーション */
+@media (max-width: 768px) {
+  .animated-marker .ripple {
+    animation: ripple 1.5s infinite;
+    opacity: 1;
+  }
+}
+
 .animated-marker:hover {
   transform: scale(1.2);
 }

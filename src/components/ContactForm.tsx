@@ -73,17 +73,7 @@ export default function ContactForm() {
   };
 
   return (
-    <Box
-      p={6}
-      borderRadius="xl"
-      bg="gray.800"
-      border="1px"
-      borderColor="gray.700"
-      _hover={{ transform: "translateY(-2px)", transition: "all 0.2s" }}
-      transition="all 0.2s"
-      w="100%"
-      mx="auto"
-    >
+    <Box p={6} w="100%" mx="auto">
       <HStack spacing={4} mb={6}>
         <Icon as={FaEnvelope} boxSize={6} color="yellow.400" />
         <Text fontSize="2xl" fontWeight="bold" color="yellow.400">

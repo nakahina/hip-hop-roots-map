@@ -63,6 +63,9 @@ import {
   FaGithub,
   FaHeart as FaHeartSolid,
   FaUsers,
+  FaListUl,
+  FaChevronRight,
+  FaChevronLeft,
 } from "react-icons/fa";
 import { FaTiktok } from "react-icons/fa6";
 import { FaLine } from "react-icons/fa6";
@@ -91,17 +94,29 @@ export default function MapView() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+  const [showContact, setShowContact] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [activeTab, setActiveTab] = useState<"map" | "artists" | "menu">("map");
-  const [contactForm, setContactForm] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const toast = useToast();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Drawer用ドラッグイベントハンドラ（SP用）
+  const touchStartYRef = useRef(0);
+  const touchEndYRef = useRef(0);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndYRef.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = () => {
+    if (touchEndYRef.current - touchStartYRef.current > 50) {
+      setHoveredArtist(null);
+    }
+    touchStartYRef.current = 0;
+    touchEndYRef.current = 0;
+  };
 
   const handleSearch = () => {
     setSearchQuery(searchTerm);
@@ -113,61 +128,8 @@ export default function MapView() {
     }
   };
 
-  const handleStyleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedStyle(e.target.value);
-    setHoveredArtist(null);
-  };
-
-  const handleContactSubmit = async () => {
-    if (!contactForm.name || !contactForm.email || !contactForm.message) {
-      toast({
-        title: "エラー",
-        description: "すべての項目を入力してください。",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(contactForm),
-      });
-
-      if (!response.ok) {
-        throw new Error("送信に失敗しました");
-      }
-
-      toast({
-        title: "送信完了",
-        description: "お問い合わせありがとうございます。",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      setContactForm({ name: "", email: "", message: "" });
-      onClose();
-    } catch (error) {
-      toast({
-        title: "エラー",
-        description: "送信に失敗しました。もう一度お試しください。",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleArtistClick = (artist: Artist) => {
+    setSelectedArtist(artist.name);
     setHoveredArtist(artist);
     if (mapRef.current) {
       mapRef.current.setView([artist.lat, artist.lng], 12);
@@ -206,12 +168,6 @@ export default function MapView() {
 
     fetchArtists();
   }, [searchQuery, selectedStyle, sortOrder]);
-
-  // 並び順のオプション
-  const sortOptions = [
-    { value: "name", label: "名前順" },
-    { value: "prefecture", label: "都道府県順" },
-  ];
 
   // 同じ座標のアーティストをグループ化して、オフセットを計算する関数
   const calculateMarkerPositions = (artistsList: Artist[]) => {
@@ -327,145 +283,110 @@ export default function MapView() {
     >
       <IconButton
         aria-label="Map"
-        icon={<FaMapMarkerAlt />}
+        icon={<FaMapMarkerAlt size={20} />}
         variant="ghost"
-        color={activeTab === "map" ? "yellow.400" : "gray.400"}
-        onClick={() => setActiveTab("map")}
+        color={
+          activeTab === "map" && !showAbout && !showContact
+            ? "yellow.400"
+            : "gray.400"
+        }
+        onClick={() => {
+          setActiveTab("map");
+          setShowContact(false);
+          setShowAbout(false);
+        }}
       />
       <IconButton
         aria-label="Artist List"
-        icon={<FaPlay />}
+        icon={<FaListUl size={20} />}
         variant="ghost"
         color={activeTab === "artists" ? "yellow.400" : "gray.400"}
-        onClick={() => setActiveTab("artists")}
-      />
-      <IconButton
-        aria-label="Menu"
-        icon={<HamburgerIcon />}
-        variant="ghost"
-        color={activeTab === "menu" ? "yellow.400" : "gray.400"}
-        onClick={onOpen}
+        onClick={() => {
+          setActiveTab("artists");
+        }}
       />
     </Flex>
   );
 
   const renderSidebar = () => (
     <Box
-      w={{ base: "100%", md: "350px" }}
+      w={{ base: "100%", md: isSidebarCollapsed ? "80px" : "360px" }}
       h={{ base: "calc(100vh - 60px - 60px)", md: "calc(100vh - 60px)" }}
       bg="gray.900"
       borderRight={{ base: "none", md: "1px" }}
       borderColor="gray.700"
       p={6}
       overflowY="auto"
+      transition="width 0.3s ease"
+      position="relative"
     >
       {loading ? (
         <Text color="gray.400">Loading...</Text>
       ) : (
         <>
-          <InputGroup w={{ base: "200px", md: "300px" }} mb={4}>
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              bg="gray.800"
-              color="white"
-              borderColor="gray.700"
-              _hover={{ borderColor: "gray.600" }}
-              _focus={{ borderColor: "purple.500", boxShadow: "none" }}
-              _placeholder={{ color: "gray.400" }}
-            />
-            <InputRightElement>
-              <IconButton
-                aria-label="検索"
-                icon={<SearchIcon />}
-                size="sm"
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: "white", bg: "gray.700" }}
-                onClick={handleSearch}
-              />
-            </InputRightElement>
-          </InputGroup>
-          {/* <Text fontSize="sm" color="gray.400" mb={1} letterSpacing="wider">
-            STYLE
-          </Text>
-          <Select
-            mb={4}
-            value={selectedStyle}
-            onChange={handleStyleChange}
-            bg="gray.800"
-            color="gray.100"
-            borderColor="gray.700"
-            _hover={{ borderColor: "gray.600" }}
-            _focus={{ borderColor: "purple.500", boxShadow: "none" }}
-            fontSize="md"
-          >
-            <option value="all">ALL STYLES</option>
-            <option value="j-rap">J-RAP</option>
-            <option value="j-pop">J-POP</option>
-            <option value="j-r&b">J-R&B</option>
-            <option value="reggae">REGGAE</option>
-            <option value="hip hop">HIPHOP</option>
-            <option value="thai hip hop">THAI HIP HOP</option>
-            <option value="experimental hip hop">EXPERIMENTAL HIP HOP</option>
-            <option value="k-rap">K-RAP</option>
-            <option value="japanese indie">JAPANESE INDIE</option>
-            <option value="shibuya-kei">SHIPBUYA KEI</option>
-            <option value="hyperpop">HYPERPOP</option>
-            <option value="breakcore">BREAKCORE</option>
-            <option value="jam band">JAM BAND</option>
-            <option value="city pop">CITY POP</option>
-          </Select>
-
-          <Text fontSize="sm" color="gray.400" mb={1} letterSpacing="wider">
-            SORT BY
-          </Text>
-          <Select
-            mb={6}
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            bg="gray.800"
-            color="gray.100"
-            borderColor="gray.700"
-            _hover={{ borderColor: "gray.600" }}
-            _focus={{ borderColor: "purple.500", boxShadow: "none" }}
-            fontSize="md"
-          >
-            {sortOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label === "名前順" ? "NAME" : "PREFECTURE"}
-              </option>
-            ))}
-          </Select> */}
-          {/* アーティスト数 */}
-          <Text fontSize="sm" color="gray.300" mb={2} letterSpacing="wider">
-            {artists.length} ARTISTS
-          </Text>
-          {/* アーティストリスト */}
+          {!isSidebarCollapsed && (
+            <>
+              <InputGroup w={{ base: "200px", md: "300px" }} mb={4}>
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  bg="gray.800"
+                  color="white"
+                  borderColor="gray.700"
+                  _hover={{ borderColor: "gray.600" }}
+                  _focus={{ borderColor: "purple.500", boxShadow: "none" }}
+                  _placeholder={{ color: "gray.400" }}
+                />
+                <InputRightElement>
+                  <IconButton
+                    aria-label="検索"
+                    icon={<SearchIcon />}
+                    size="sm"
+                    variant="ghost"
+                    color="gray.400"
+                    _hover={{ color: "white", bg: "gray.700" }}
+                    onClick={handleSearch}
+                  />
+                </InputRightElement>
+              </InputGroup>
+              <Text fontSize="sm" color="gray.300" mb={2} letterSpacing="wider">
+                {artists.length} ARTISTS
+              </Text>
+            </>
+          )}
           <VStack spacing={4} align="stretch">
             {artists.map((artist) => (
               <Flex
                 key={artist.name}
-                p={4}
-                bg={selectedArtist === artist.name ? "purple.500" : "gray.800"}
+                p={isSidebarCollapsed ? 2 : 4}
+                bg={
+                  !isSidebarCollapsed
+                    ? selectedArtist === artist.name
+                      ? "yellow.400"
+                      : "gray.800"
+                    : "none"
+                }
                 color="white"
                 borderRadius="lg"
                 align="center"
+                justify={isSidebarCollapsed ? "center" : "flex-start"}
                 gap={4}
                 boxShadow="sm"
                 cursor="pointer"
                 _hover={{
-                  bg:
-                    selectedArtist === artist.name ? "purple.500" : "gray.700",
+                  bg: !isSidebarCollapsed
+                    ? selectedArtist === artist.name
+                      ? "yellow.400"
+                      : "gray.700"
+                    : "none",
                   transform: "translateY(-2px)",
                   transition: "all 0.2s",
                 }}
                 onClick={() => handleArtistClick(artist)}
                 transition="all 0.2s"
               >
-                {/* 丸いアイコン（画像 or イニシャル） */}
                 {artist.smallImage ? (
                   <Avatar
                     src={artist.smallImage}
@@ -482,53 +403,49 @@ export default function MapView() {
                     color="black"
                   />
                 )}
-                <HStack w="100%">
-                  <Box flex="1">
-                    <Text
-                      fontWeight="bold"
-                      fontSize="md"
-                      mb={1}
-                      letterSpacing="wider"
-                    >
-                      {artist.name}
-                    </Text>
-                    <Flex
-                      align="center"
-                      gap={2}
-                      fontSize="smaller"
-                      color="gray.300"
-                    >
-                      {artist.city && (
-                        <HStack as="span" gap={1}>
-                          <FaMapMarkerAlt />
-                          <Text>{artist.city}</Text>
-                        </HStack>
-                      )}
-                    </Flex>
-                    {/* ジャンルバッジ */}
-                    {artist.genres && artist.genres.length > 0 && (
-                      <Flex gap={2} mt={2} flexWrap="wrap">
-                        {artist.genres.map((genre) => (
-                          <Badge
-                            key={genre}
-                            colorScheme="gray"
-                            bg="gray.700"
-                            color="gray.100"
-                            borderRadius="full"
-                            border="1px"
-                            borderColor="gray.600"
-                            px={2}
-                            py={0.5}
-                            fontSize="x-small"
-                            letterSpacing="wider"
-                          >
-                            {genre}
-                          </Badge>
-                        ))}
+                {!isSidebarCollapsed && (
+                  <HStack w="100%">
+                    <Box flex="1">
+                      <Text
+                        fontWeight="bold"
+                        fontSize="md"
+                        mb={1}
+                        letterSpacing="wider"
+                      >
+                        {artist.name}
+                      </Text>
+                      <Flex align="center" gap={2} fontSize="smaller">
+                        {artist.city && (
+                          <HStack as="span" gap={1}>
+                            <FaMapMarkerAlt />
+                            <Text>{artist.city}</Text>
+                          </HStack>
+                        )}
                       </Flex>
-                    )}
-                  </Box>
-                </HStack>
+                      {artist.genres && artist.genres.length > 0 && (
+                        <Flex gap={2} mt={2} flexWrap="wrap">
+                          {artist.genres.map((genre) => (
+                            <Badge
+                              key={genre}
+                              colorScheme="gray"
+                              bg="gray.700"
+                              color="gray.100"
+                              borderRadius="full"
+                              border="1px"
+                              borderColor="gray.600"
+                              px={2}
+                              py={0.5}
+                              fontSize="x-small"
+                              letterSpacing="wider"
+                            >
+                              {genre}
+                            </Badge>
+                          ))}
+                        </Flex>
+                      )}
+                    </Box>
+                  </HStack>
+                )}
               </Flex>
             ))}
           </VStack>
@@ -647,7 +564,7 @@ export default function MapView() {
             <Flex
               key={artist.name}
               p={4}
-              bg={selectedArtist === artist.name ? "purple.500" : "gray.800"}
+              bg={selectedArtist === artist.name ? "yellow.400" : "gray.800"}
               color="white"
               borderRadius="lg"
               align="center"
@@ -655,7 +572,7 @@ export default function MapView() {
               boxShadow="sm"
               cursor="pointer"
               _hover={{
-                bg: selectedArtist === artist.name ? "purple.500" : "gray.700",
+                bg: selectedArtist === artist.name ? "yellow.400" : "gray.700",
                 transform: "translateY(-2px)",
                 transition: "all 0.2s",
               }}
@@ -689,12 +606,7 @@ export default function MapView() {
                   >
                     {artist.name}
                   </Text>
-                  <Flex
-                    align="center"
-                    gap={2}
-                    fontSize="smaller"
-                    color="gray.300"
-                  >
+                  <Flex align="center" gap={2} fontSize="smaller">
                     {artist.city && (
                       <HStack as="span" gap={1}>
                         <FaMapMarkerAlt />
@@ -711,10 +623,13 @@ export default function MapView() {
                           colorScheme="gray"
                           bg="gray.700"
                           color="gray.100"
-                          borderRadius="md"
-                          px={3}
-                          py={1}
+                          borderRadius="full"
+                          px={2}
+                          py={0.5}
                           fontSize="x-small"
+                          letterSpacing="wider"
+                          border="1px"
+                          borderColor="gray.600"
                         >
                           {genre}
                         </Badge>
@@ -777,7 +692,13 @@ export default function MapView() {
       p={6}
       overflowY="auto"
     >
-      <VStack spacing={8} align="stretch" maxW="800px" mx="auto">
+      <VStack
+        spacing={8}
+        align="stretch"
+        maxW="800px"
+        mx="auto"
+        mb={{ base: "70px", md: "0" }}
+      >
         <Box
           p={6}
           borderRadius="xl"
@@ -793,11 +714,11 @@ export default function MapView() {
               About
             </Text>
           </HStack>
-          <Text color="gray.300" fontSize="md" lineHeight="tall">
-            HipHopマップは、ヒップホップカルチャーを形作ってきたアーティストたちの出身地や育ってきた場所を世界地図上にプロットしたサービスです。
+          <Text color="gray.300" fontSize="sm" lineHeight="tall">
+            HipHopマップは、ヒップホップカルチャーを形作ってきたアーティストたちの出身地や育った場所を世界地図上にプロットしたサービスです。
             街、地区、国——場所には物語がある。音楽と土地のつながりを感じ、ヒップホップの多様なルーツに触れてください。
           </Text>
-          <Text
+          {/* <Text
             mt={4}
             color="gray.300"
             fontFamily="sans-serif"
@@ -809,7 +730,7 @@ export default function MapView() {
             have shaped hip-hop culture. Cities, neighborhoods, countries—every
             place has its story. Feel the connection between music and place,
             and discover the diverse roots of hip-hop.
-          </Text>
+          </Text> */}
         </Box>
 
         <Box
@@ -827,10 +748,10 @@ export default function MapView() {
               Map
             </Text>
           </HStack>
-          <Text color="gray.300" fontSize="md" lineHeight="tall">
+          <Text color="gray.300" fontSize="sm" lineHeight="tall">
             アーティストの位置情報は、出身地、育った場所、または深い関わりのある場所をもとに設定しています。マップ上の位置はおおよその目安であり、実際の場所とは多少のずれがある場合があります。もし誤りや気になる点があれば、お知らせいただけると幸いです。
           </Text>
-          <Text
+          {/* <Text
             mt={4}
             color="gray.300"
             fontFamily="sans-serif"
@@ -842,10 +763,8 @@ export default function MapView() {
             connection. The map markers are approximate and may not precisely
             reflect the actual location. If you notice any errors or have
             concerns, we would greatly appreciate it if you let us know.
-          </Text>
+          </Text> */}
         </Box>
-
-        <ContactForm />
 
         <Box
           p={6}
@@ -902,6 +821,86 @@ export default function MapView() {
     </Box>
   );
 
+  const renderContactSection = () => (
+    <Box
+      position="absolute"
+      top="60px"
+      left={0}
+      right={0}
+      bottom={0}
+      bg="gray.900"
+      zIndex={900}
+      p={6}
+      overflowY="auto"
+    >
+      <VStack
+        spacing={8}
+        align="stretch"
+        maxW="800px"
+        mx="auto"
+        mb={{ base: "70px", md: "0" }}
+      >
+        <ContactForm />
+      </VStack>
+    </Box>
+  );
+
+  // PC用アーティスト詳細Boxの位置管理
+  const [detailBoxPos, setDetailBoxPos] = useState({
+    top: window.innerHeight - 400,
+    left: window.innerWidth - 480,
+  });
+  const [dragging, setDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+
+  const handleDetailBoxMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    dragOffset.current = {
+      x: e.clientX - detailBoxPos.left,
+      y: e.clientY - detailBoxPos.top,
+    };
+    document.body.style.userSelect = "none";
+  };
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setDetailBoxPos((pos) => ({
+        left: Math.min(
+          Math.max(e.clientX - dragOffset.current.x, 0),
+          window.innerWidth - 420
+        ),
+        top: Math.min(
+          Math.max(e.clientY - dragOffset.current.y, 0),
+          window.innerHeight - 350
+        ),
+      }));
+    };
+    const handleMouseUp = () => {
+      setDragging(false);
+      document.body.style.userSelect = "";
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging]);
+
+  // 画面リサイズ時に詳細ボックスが画面内に収まるよう補正
+  useEffect(() => {
+    const handleResize = () => {
+      setDetailBoxPos((pos) => ({
+        left: Math.min(pos.left, window.innerWidth - 420),
+        top: Math.min(pos.top, window.innerHeight - 350),
+      }));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   return (
     <Box h="100vh" w="100vw" bg="gray.900">
       {/* Header */}
@@ -938,24 +937,67 @@ export default function MapView() {
             </span>
           </Text>
           <Box>
-            <Button
-              variant="ghost"
-              color="gray.400"
-              _hover={{ color: "yellow.400", bg: "gray.700" }}
-              onClick={() => setShowAbout(false)}
-              letterSpacing="wider"
-            >
-              MAP
-            </Button>
-            <Button
-              variant="ghost"
-              color="gray.400"
-              _hover={{ color: "yellow.400", bg: "gray.700" }}
-              onClick={() => setShowAbout(!showAbout)}
-              letterSpacing="wider"
-            >
-              About
-            </Button>
+            <HStack spacing={2} display={{ base: "none", md: "flex" }}>
+              <Button
+                variant="ghost"
+                color="gray.400"
+                _hover={{ color: "yellow.400", bg: "gray.700" }}
+                onClick={() => {
+                  setShowAbout(false);
+                  setShowContact(false);
+                }}
+                letterSpacing="wider"
+                display={{
+                  base: "none",
+                  md: "flex",
+                }}
+              >
+                MAP
+              </Button>
+              <Button
+                variant="ghost"
+                color="gray.400"
+                _hover={{ color: "yellow.400", bg: "gray.700" }}
+                onClick={() => {
+                  setShowAbout(true);
+                  setShowContact(false);
+                }}
+                letterSpacing="wider"
+                display={{
+                  base: "none",
+                  md: "flex",
+                }}
+              >
+                About
+              </Button>
+              <Button
+                variant="ghost"
+                color="gray.400"
+                _hover={{ color: "yellow.400", bg: "gray.700" }}
+                onClick={() => {
+                  setShowContact(true);
+                  setShowAbout(false);
+                }}
+                letterSpacing="wider"
+                display={{
+                  base: "none",
+                  md: "flex",
+                }}
+              >
+                Contact
+              </Button>
+            </HStack>
+            {isMobile && (
+              <IconButton
+                aria-label="Menu"
+                icon={<HamburgerIcon boxSize={6} />}
+                variant="ghost"
+                color="gray.400"
+                _hover={{ color: "yellow.400", bg: "gray.700" }}
+                onClick={onOpen}
+                ml={2}
+              />
+            )}
           </Box>
         </Flex>
       </Box>
@@ -966,17 +1008,43 @@ export default function MapView() {
       >
         {/* About Section */}
         {showAbout && renderAboutSection()}
+        {/* Contact Section */}
+        {showContact && renderContactSection()}
 
         {/* Sidebar for desktop */}
-        {!isMobile && !showAbout && renderSidebar()}
+        {!isMobile && !showAbout && !showContact && (
+          <Flex position="relative">
+            <IconButton
+              aria-label="Toggle sidebar"
+              icon={isSidebarCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
+              position="absolute"
+              top={2}
+              right={-10}
+              size="sm"
+              variant="ghost"
+              color="gray.400"
+              border="1px"
+              borderColor="gray.700"
+              bg="gray.800"
+              _hover={{ color: "white", bg: "gray.700" }}
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              display={{ base: "none", md: "flex" }}
+              zIndex={999}
+            />
+            {renderSidebar()}
+          </Flex>
+        )}
 
         {/* Map */}
         <Box
           flex="1"
           position="relative"
           display={{
-            base: activeTab === "map" && !showAbout ? "block" : "none",
-            md: showAbout ? "none" : "block",
+            base:
+              activeTab === "map" && !showAbout && !showContact
+                ? "block"
+                : "none",
+            md: showAbout || showContact ? "none" : "block",
           }}
         >
           <MapContainer
@@ -1035,11 +1103,12 @@ export default function MapView() {
           </MapContainer>
 
           {/* Hover Profile */}
-          {hoveredArtist && (
+          {/* PC用: 右下固定（ドラッグ可能） */}
+          {!isMobile && hoveredArtist && (
             <Box
-              position="absolute"
-              bottom={10}
-              right={10}
+              position="fixed"
+              top={detailBoxPos.top}
+              left={detailBoxPos.left}
               p={6}
               borderRadius="xl"
               boxShadow="2xl"
@@ -1050,6 +1119,11 @@ export default function MapView() {
               backdropFilter="blur(10px)"
               bg="rgba(26, 32, 44, 0.95)"
               overflowY="auto"
+              style={{
+                cursor: dragging ? "grabbing" : "grab",
+                transition: dragging ? "none" : "box-shadow 0.2s",
+              }}
+              onMouseDown={handleDetailBoxMouseDown}
             >
               <IconButton
                 aria-label="close profile"
@@ -1081,23 +1155,6 @@ export default function MapView() {
                         <Text fontSize="small">{hoveredArtist.city}</Text>
                       </Flex>
                     </HStack>
-                    <Button
-                      leftIcon={<FaShareAlt size={13} />}
-                      size="sm"
-                      variant="ghost"
-                      border="1px"
-                      borderColor="gray.700"
-                      p={2}
-                      borderRadius="md"
-                      bg="gray.700"
-                      color="gray.100"
-                      _hover={{ color: "#1DA1F2", bg: "gray.700" }}
-                      onClick={() => handleShare("twitter", hoveredArtist.name)}
-                      fontSize="smaller"
-                      mr={6}
-                    >
-                      Share
-                    </Button>
                   </HStack>
                   {hoveredArtist.genres && hoveredArtist.genres.length > 0 && (
                     <Box mt={2}>
@@ -1232,7 +1289,251 @@ export default function MapView() {
                   </Flex>
                 </Box>
               )}
+              <Button
+                leftIcon={<FaShareAlt size={13} />}
+                size="sm"
+                variant="ghost"
+                border="1px"
+                borderColor="gray.700"
+                p={2}
+                borderRadius="md"
+                bg="gray.700"
+                color="gray.100"
+                _hover={{ color: "#1DA1F2", bg: "gray.700" }}
+                onClick={() => handleShare("twitter", hoveredArtist.name)}
+                fontSize="smaller"
+                mr={6}
+                position="absolute"
+                bottom={7}
+                right={0}
+                zIndex={1000}
+              >
+                Share
+              </Button>
             </Box>
+          )}
+
+          {/* SP用: 下からDrawerで詳細表示 */}
+          {isMobile && hoveredArtist && (
+            <Drawer
+              isOpen={!!hoveredArtist}
+              placement="bottom"
+              onClose={() => setHoveredArtist(null)}
+              size="full"
+            >
+              <DrawerOverlay />
+              <DrawerContent
+                bg="gray.900"
+                color="white"
+                borderTopRadius="2xl"
+                maxHeight="395px"
+                mt="auto"
+                mb="0"
+                position="absolute"
+                left={0}
+                right={0}
+                bottom={0}
+                style={{
+                  transition: "max-height 0.3s",
+                  boxShadow: "0 -4px 24px rgba(0,0,0,0.4)",
+                }}
+                display="flex"
+                flexDirection="column"
+                justifyContent="flex-end"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* ドラッグインジケーターバー */}
+                <Box
+                  w="100%"
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  pt={3}
+                >
+                  <Box w="40px" h="5px" bg="gray.500" borderRadius="full" />
+                </Box>
+                <DrawerCloseButton color="gray.400" top={3} right={3} />
+                <DrawerBody p={6} overflowY="auto">
+                  <Flex align="center" gap={4} mb={4} w="100%">
+                    <Box w="100%">
+                      <HStack justify="space-between" w="100%">
+                        <HStack alignItems="center" spacing={5}>
+                          <Text
+                            fontWeight="bold"
+                            color="yellow.400"
+                            fontSize="xl"
+                            mb={1}
+                            alignSelf="center"
+                          >
+                            {hoveredArtist.name}
+                          </Text>
+                          <Flex align="center" gap={1} color="gray.400">
+                            <FaMapMarkerAlt />
+                            <Text fontSize="small">{hoveredArtist.city}</Text>
+                          </Flex>
+                        </HStack>
+                      </HStack>
+                      {hoveredArtist.genres &&
+                        hoveredArtist.genres.length > 0 && (
+                          <Box mt={2}>
+                            <Flex gap={2} flexWrap="wrap">
+                              {hoveredArtist.genres.map((genre) => (
+                                <Badge
+                                  key={genre}
+                                  colorScheme="gray"
+                                  bg="gray.700"
+                                  color="gray.100"
+                                  borderRadius="full"
+                                  border="1px"
+                                  borderColor="gray.600"
+                                  px={2}
+                                  py={0.5}
+                                  fontSize="xs"
+                                  letterSpacing="wider"
+                                >
+                                  {genre}
+                                </Badge>
+                              ))}
+                            </Flex>
+                          </Box>
+                        )}
+                    </Box>
+                  </Flex>
+                  {/* Spotify Player */}
+                  {hoveredArtist.spotifyTrackId && (
+                    <Box mt={4}>
+                      <SpotifyEmbed trackId={hoveredArtist.spotifyTrackId} />
+                    </Box>
+                  )}
+                  {hoveredArtist.youtubeUrl && (
+                    <Box mt={4}>
+                      <Text
+                        fontSize="sm"
+                        color="gray.400"
+                        mb={2}
+                        fontWeight="bold"
+                        letterSpacing="wider"
+                      >
+                        YOUTUBE
+                      </Text>
+                      <YouTubeEmbed videoId={hoveredArtist.youtubeUrl} />
+                    </Box>
+                  )}
+                  {(hoveredArtist.instagramUrl ||
+                    hoveredArtist.twitterUrl ||
+                    hoveredArtist.facebookUrl ||
+                    hoveredArtist.youtubeChannelUrl ||
+                    hoveredArtist.tiktokUrl) && (
+                    <Box mt={7}>
+                      <Text
+                        fontSize="sm"
+                        color="gray.400"
+                        mb={1}
+                        fontWeight="bold"
+                        letterSpacing="wider"
+                      >
+                        SOCIAL MEDIA
+                      </Text>
+                      <Flex gap={3}>
+                        {hoveredArtist.instagramUrl && (
+                          <IconButton
+                            as="a"
+                            href={hoveredArtist.instagramUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Instagram"
+                            icon={<FaInstagram size={25} />}
+                            size="md"
+                            variant="ghost"
+                            color="gray.400"
+                            _hover={{ color: "#E1306C", bg: "gray.700" }}
+                          />
+                        )}
+                        {hoveredArtist.twitterUrl && (
+                          <IconButton
+                            as="a"
+                            href={hoveredArtist.twitterUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Twitter"
+                            icon={<FaTwitter size={25} />}
+                            size="md"
+                            variant="ghost"
+                            color="gray.400"
+                            _hover={{ color: "#1DA1F2", bg: "gray.700" }}
+                          />
+                        )}
+                        {hoveredArtist.facebookUrl && (
+                          <IconButton
+                            as="a"
+                            href={hoveredArtist.facebookUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Facebook"
+                            icon={<FaFacebook size={25} />}
+                            size="md"
+                            variant="ghost"
+                            color="gray.400"
+                            _hover={{ color: "#4267B2", bg: "gray.700" }}
+                          />
+                        )}
+                        {hoveredArtist.youtubeChannelUrl && (
+                          <IconButton
+                            as="a"
+                            href={hoveredArtist.youtubeChannelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="YouTube"
+                            icon={<FaYoutube size={25} />}
+                            size="md"
+                            variant="ghost"
+                            color="gray.400"
+                            _hover={{ color: "#FF0000", bg: "gray.700" }}
+                          />
+                        )}
+                        {hoveredArtist.tiktokUrl && (
+                          <IconButton
+                            as="a"
+                            href={hoveredArtist.tiktokUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="TikTok"
+                            icon={<FaTiktok size={25} />}
+                            size="md"
+                            variant="ghost"
+                            color="gray.400"
+                            _hover={{ color: "#000000", bg: "gray.700" }}
+                          />
+                        )}
+                      </Flex>
+                    </Box>
+                  )}
+                  <Button
+                    leftIcon={<FaShareAlt size={13} />}
+                    size="sm"
+                    variant="ghost"
+                    border="1px"
+                    borderColor="gray.700"
+                    p={2}
+                    borderRadius="md"
+                    bg="gray.700"
+                    color="gray.100"
+                    _hover={{ color: "#1DA1F2", bg: "gray.700" }}
+                    onClick={() => handleShare("twitter", hoveredArtist.name)}
+                    fontSize="smaller"
+                    mr={6}
+                    position="absolute"
+                    bottom={10}
+                    right={0}
+                    zIndex={1000}
+                  >
+                    Share
+                  </Button>
+                </DrawerBody>
+              </DrawerContent>
+            </Drawer>
           )}
         </Box>
 
@@ -1248,18 +1549,49 @@ export default function MapView() {
               MENU
             </DrawerHeader>
             <DrawerBody>
-              <VStack spacing={6} align="stretch">
+              <VStack spacing={6} align="stretch" mt={6}>
                 <Box>
                   <Text
                     fontSize="lg"
                     fontWeight="bold"
                     mb={1}
                     letterSpacing="wider"
-                    mt={6}
+                    cursor="pointer"
+                    onClick={() => {
+                      setShowAbout(true);
+                      setShowContact(false);
+                      onClose();
+                    }}
+                  >
+                    ABOUT
+                  </Text>
+                </Box>
+                <Box>
+                  <Text
+                    fontSize="lg"
+                    fontWeight="bold"
+                    mb={1}
+                    letterSpacing="wider"
+                    cursor="pointer"
+                    onClick={() => {
+                      setShowContact(true);
+                      setShowAbout(false);
+                      onClose();
+                    }}
+                  >
+                    CONTACT
+                  </Text>
+                </Box>
+                <Box>
+                  <Text
+                    fontSize="lg"
+                    fontWeight="bold"
+                    mb={3}
+                    letterSpacing="wider"
                   >
                     SHARE
                   </Text>
-                  <Flex gap={3}>
+                  <VStack alignItems="flex-start">
                     <Button
                       leftIcon={<FaTwitter size={20} />}
                       size="md"
@@ -1280,7 +1612,7 @@ export default function MapView() {
                     >
                       Facebook
                     </Button>
-                  </Flex>
+                  </VStack>
                 </Box>
               </VStack>
             </DrawerBody>
