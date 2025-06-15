@@ -105,16 +105,46 @@ export default function MapView() {
   // Drawer用ドラッグイベントハンドラ（SP用）
   const touchStartYRef = useRef(0);
   const touchEndYRef = useRef(0);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartYRef.current = e.touches[0].clientY;
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndYRef.current = e.touches[0].clientY;
+    if (!drawerRef.current) return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartYRef.current;
+
+    // 上方向へのスワイプは無視
+    if (deltaY < 0) return;
+
+    // ドロワーの高さを調整
+    const maxHeight = 395; // ドロワーの最大高さ
+    const newHeight = Math.max(0, maxHeight - deltaY);
+    drawerRef.current.style.maxHeight = `${newHeight}px`;
+
+    // スワイプの進行度に応じて透明度を調整
+    const opacity = 1 - deltaY / maxHeight;
+    drawerRef.current.style.opacity = opacity.toString();
   };
+
   const handleTouchEnd = () => {
-    if (touchEndYRef.current - touchStartYRef.current > 50) {
+    if (!drawerRef.current) return;
+
+    const deltaY = touchEndYRef.current - touchStartYRef.current;
+    const threshold = 100; // スワイプのしきい値
+
+    if (deltaY > threshold) {
+      // しきい値を超えた場合、ドロワーを閉じる
       setHoveredArtist(null);
+    } else {
+      // しきい値未満の場合、元の位置に戻す
+      drawerRef.current.style.maxHeight = "395px";
+      drawerRef.current.style.opacity = "1";
     }
+
     touchStartYRef.current = 0;
     touchEndYRef.current = 0;
   };
@@ -301,9 +331,15 @@ export default function MapView() {
         aria-label="Artist List"
         icon={<FaListUl size={20} />}
         variant="ghost"
-        color={activeTab === "artists" ? "yellow.400" : "gray.400"}
+        color={
+          activeTab === "artists" && !showAbout && !showContact
+            ? "yellow.400"
+            : "gray.400"
+        }
         onClick={() => {
           setActiveTab("artists");
+          setShowContact(false);
+          setShowAbout(false);
         }}
       />
     </Flex>
@@ -458,16 +494,15 @@ export default function MapView() {
   const renderMobileArtistsList = () => (
     <Box
       position="absolute"
-      top={0}
+      top="60px"
       left={0}
       right={0}
       bottom={0}
       bg="gray.900"
-      zIndex={900}
+      overflowY="auto"
       display="flex"
       flexDirection="column"
     >
-      {/* 固定ヘッダー */}
       <Box
         bg="gray.900"
         px={4}
@@ -540,6 +575,8 @@ export default function MapView() {
             _hover={{ borderColor: "gray.600" }}
             _focus={{ borderColor: "purple.500", boxShadow: "none" }}
             _placeholder={{ color: "gray.400" }}
+            fontFamily="Noto Sans JP"
+            fontSize="sm"
           />
           <InputRightElement>
             <IconButton
@@ -560,7 +597,7 @@ export default function MapView() {
       </Box>
       {/* スクロール可能なアーティストリスト */}
       <Box flex="1" overflowY="auto" p={3}>
-        <VStack spacing={4} align="stretch" mb={20} mt={2}>
+        <VStack spacing={4} align="stretch" mb="120px" mt={2}>
           {artists.map((artist) => (
             <Flex
               key={artist.name}
@@ -700,7 +737,7 @@ export default function MapView() {
         align="stretch"
         maxW="800px"
         mx="auto"
-        mb={{ base: "70px", md: "0" }}
+        mb={{ base: "150px", md: "0" }}
       >
         <Box
           p={6}
@@ -1014,6 +1051,8 @@ export default function MapView() {
         {showAbout && renderAboutSection()}
         {/* Contact Section */}
         {showContact && renderContactSection()}
+        {/* Mobile Artists List */}
+        {isMobile && activeTab === "artists" && renderMobileArtistsList()}
 
         {/* Sidebar for desktop */}
         {!isMobile && !showAbout && !showContact && (
@@ -1327,6 +1366,7 @@ export default function MapView() {
             >
               <DrawerOverlay />
               <DrawerContent
+                ref={drawerRef}
                 bg="gray.900"
                 color="white"
                 borderTopRadius="2xl"
@@ -1338,7 +1378,7 @@ export default function MapView() {
                 right={0}
                 bottom={0}
                 style={{
-                  transition: "max-height 0.3s",
+                  transition: "max-height 0.3s, opacity 0.3s",
                   boxShadow: "0 -4px 24px rgba(0,0,0,0.4)",
                 }}
                 display="flex"
@@ -1540,9 +1580,6 @@ export default function MapView() {
             </Drawer>
           )}
         </Box>
-
-        {/* Mobile Artists List */}
-        {isMobile && activeTab === "artists" && renderMobileArtistsList()}
 
         {/* Mobile Menu Drawer */}
         <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
