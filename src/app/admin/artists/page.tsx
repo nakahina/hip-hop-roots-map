@@ -450,7 +450,7 @@ export default function ArtistsAdminPage() {
                 />
                 <Input
                   placeholder="ジャンル（カンマ区切り）"
-                  value={editArtist.genres.join(", ")}
+                  value={editArtist.genres?.join(", ")}
                   onChange={(e) => handleGenresChange(e.target.value)}
                 />
                 <Input
