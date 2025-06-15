@@ -73,7 +73,7 @@ export default function ContactForm() {
   };
 
   return (
-    <Box p={6} w="100%" mx="auto">
+    <Box w="100%" mx="auto">
       <HStack spacing={4} mb={6}>
         <Icon as={FaEnvelope} boxSize={6} color="yellow.400" />
         <Text fontSize="2xl" fontWeight="bold" color="yellow.400">
@@ -94,6 +94,9 @@ export default function ContactForm() {
               color="white"
               _hover={{ borderColor: "gray.500" }}
               _focus={{ borderColor: "yellow.400", boxShadow: "none" }}
+              placeholder="Your Name"
+              fontFamily="Noto Sans JP"
+              fontSize="sm"
             />
           </FormControl>
 
@@ -109,6 +112,9 @@ export default function ContactForm() {
               color="white"
               _hover={{ borderColor: "gray.500" }}
               _focus={{ borderColor: "yellow.400", boxShadow: "none" }}
+              placeholder="Your Email"
+              fontFamily="Noto Sans JP"
+              fontSize="sm"
             />
           </FormControl>
 
@@ -124,6 +130,9 @@ export default function ContactForm() {
               color="white"
               _hover={{ borderColor: "gray.500" }}
               _focus={{ borderColor: "yellow.400", boxShadow: "none" }}
+              placeholder="Message"
+              fontFamily="Noto Sans JP"
+              fontSize="sm"
             />
           </FormControl>
 
