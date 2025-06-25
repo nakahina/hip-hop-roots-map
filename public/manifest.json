@@ -1,0 +1,37 @@
+{
+  "name": "HIPHOP ROOTS - 世界のラップを地図で聴く",
+  "short_name": "HIPHOP ROOTS",
+  "description": "ヒップホップカルチャーを形作ってきたアーティストたちの出身地や育った場所を世界地図上にプロットしたサービスです。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2d2300",
+  "theme_color": "#2d2300",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "16x16 32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/ogp-image.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/ogp-image.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/ogp-image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["music", "entertainment", "travel"],
+  "lang": "ja",
+  "dir": "ltr"
+}
