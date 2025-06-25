@@ -641,7 +641,7 @@ export default function ArtistsAdminPage() {
         </ModalContent>
       </Modal>
 
-      <Flex justify="flex-end" mb={4}>
+      <Flex justify="flex-end">
         <Button
           leftIcon={<AddIcon />}
           colorScheme="teal"

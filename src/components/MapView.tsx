@@ -843,7 +843,7 @@ export default function MapView() {
                 .
               </Text>
             </HStack>
-            <HStack>
+            {/* <HStack>
               <Text color="gray.300" fontSize="sm">
                 Big thanks to{" "}
                 <Link
@@ -856,7 +856,7 @@ export default function MapView() {
                 </Link>{" "}
                 for some artists data.
               </Text>
-            </HStack>
+            </HStack> */}
           </VStack>
         </Box>
       </VStack>
