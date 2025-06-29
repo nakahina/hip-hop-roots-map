@@ -35,7 +35,7 @@ const jsonLd = {
     url: siteUrl,
     logo: {
       "@type": "ImageObject",
-      url: `${siteUrl}/ogp-image.png`,
+      url: `${siteUrl}/favicon.png`,
       width: 1200,
       height: 630,
     },
