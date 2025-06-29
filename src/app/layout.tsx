@@ -159,13 +159,6 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <link rel="icon" href="/favicon.png" sizes="any" />
-        <link
-          rel="icon"
-          href="/ogp-image.png"
-          type="image/png"
-          sizes="192x192"
-        />
-        <link rel="apple-touch-icon" href="/ogp-image.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2d2300" />
         <meta name="msapplication-TileColor" content="#2d2300" />
