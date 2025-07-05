@@ -105,6 +105,30 @@ export default function ImageUpload({
       clearInterval(progressInterval);
       setUploadProgress(100);
 
+      // レスポンスの処理を改善
+      if (!response.ok) {
+        // 認証エラーの場合
+        if (response.status === 401) {
+          throw new Error("認証が必要です。ログインしてください。");
+        }
+
+        // その他のHTTPエラーの場合
+        const errorText = await response.text();
+        let errorMessage = `サーバーエラー (${response.status})`;
+
+        try {
+          // JSONエラーレスポンスの場合
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // JSONでない場合（HTMLエラーページなど）
+          errorMessage = `サーバーエラー (${response.status}): ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // 成功レスポンスの処理
       const result: UploadResponse = await response.json();
 
       if (result.success) {

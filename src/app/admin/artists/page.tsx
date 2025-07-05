@@ -100,10 +100,27 @@ export default function ArtistsAdminPage() {
   }, []);
 
   const loadArtists = async () => {
-    const response = await fetch("/api/artists");
-    const data = await response.json();
+    try {
+      const response = await fetch("/api/artists");
 
-    setArtists(data);
+      if (!response.ok) {
+        if (response.status === 401) {
+          // 認証エラーの場合、ログインページにリダイレクト
+          window.location.href = "/admin/login";
+          return;
+        }
+        throw new Error(
+          `サーバーエラー (${response.status}): ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      setArtists(data);
+    } catch (error) {
+      console.error("アーティストデータの読み込みエラー:", error);
+      // エラーの場合は空配列を設定
+      setArtists([]);
+    }
   };
 
   // 検索
@@ -150,15 +167,35 @@ export default function ArtistsAdminPage() {
 
   const handleSave = async () => {
     if (!editArtist) return;
-    await fetch("/api/artists", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editArtist),
-    });
-    setIsEditMode(false);
-    onClose();
-    setEditArtist(null);
-    loadArtists();
+
+    try {
+      const response = await fetch("/api/artists", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editArtist),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/admin/login";
+          return;
+        }
+        throw new Error(
+          `保存に失敗しました (${response.status}): ${response.statusText}`
+        );
+      }
+
+      setIsEditMode(false);
+      onClose();
+      setEditArtist(null);
+      loadArtists();
+    } catch (error) {
+      console.error("保存エラー:", error);
+      alert(
+        "保存に失敗しました: " +
+          (error instanceof Error ? error.message : "不明なエラー")
+      );
+    }
   };
 
   const handleCityChange = (value: string, isEdit: boolean = false) => {
@@ -207,31 +244,50 @@ export default function ArtistsAdminPage() {
   };
 
   const handleCreate = async () => {
-    await fetch("/api/artists", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newArtist),
-    });
-    setIsCreateMode(false);
-    setNewArtist({
-      name: "",
-      city: "",
-      lat: 0,
-      lng: 0,
-      genres: [],
-      songTitle: "",
-      spotifyTrackId: "",
-      originalImage: "",
-      smallImage: "",
-      youtubeUrl: "",
-      instagramUrl: "",
-      twitterUrl: "",
-      facebookUrl: "",
-      youtubeChannelUrl: "",
-      tiktokUrl: "",
-      prefecture: "",
-    });
-    loadArtists();
+    try {
+      const response = await fetch("/api/artists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newArtist),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/admin/login";
+          return;
+        }
+        throw new Error(
+          `作成に失敗しました (${response.status}): ${response.statusText}`
+        );
+      }
+
+      setIsCreateMode(false);
+      setNewArtist({
+        name: "",
+        city: "",
+        lat: 0,
+        lng: 0,
+        genres: [],
+        songTitle: "",
+        spotifyTrackId: "",
+        originalImage: "",
+        smallImage: "",
+        youtubeUrl: "",
+        instagramUrl: "",
+        twitterUrl: "",
+        facebookUrl: "",
+        youtubeChannelUrl: "",
+        tiktokUrl: "",
+        prefecture: "",
+      });
+      loadArtists();
+    } catch (error) {
+      console.error("作成エラー:", error);
+      alert(
+        "作成に失敗しました: " +
+          (error instanceof Error ? error.message : "不明なエラー")
+      );
+    }
   };
 
   const handleDeleteClick = (artist: Artist, e: React.MouseEvent) => {
@@ -242,14 +298,34 @@ export default function ArtistsAdminPage() {
 
   const handleDelete = async () => {
     if (!deleteArtist) return;
-    await fetch("/api/artists", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: deleteArtist.id }),
-    });
-    onDeleteModalClose();
-    setDeleteArtist(null);
-    loadArtists();
+
+    try {
+      const response = await fetch("/api/artists", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deleteArtist.id }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/admin/login";
+          return;
+        }
+        throw new Error(
+          `削除に失敗しました (${response.status}): ${response.statusText}`
+        );
+      }
+
+      onDeleteModalClose();
+      setDeleteArtist(null);
+      loadArtists();
+    } catch (error) {
+      console.error("削除エラー:", error);
+      alert(
+        "削除に失敗しました: " +
+          (error instanceof Error ? error.message : "不明なエラー")
+      );
+    }
   };
 
   return (

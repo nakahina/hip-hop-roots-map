@@ -5,10 +5,19 @@ export function middleware(request: NextRequest) {
   // セッションクッキーをチェック
   const isAuthenticated = request.cookies.has("admin_session");
 
-  // /admin/artistsへのアクセスをチェック
-  if (request.nextUrl.pathname.startsWith("/admin/artists")) {
+  // 管理者向けページとAPIのパスをチェック
+  if (
+    request.nextUrl.pathname.startsWith("/admin/artists") ||
+    request.nextUrl.pathname.startsWith("/api/artists") ||
+    request.nextUrl.pathname.startsWith("/api/upload")
+  ) {
     if (!isAuthenticated) {
-      // 未認証の場合はログインページにリダイレクト
+      // APIへのアクセスの場合は401エラーを返す
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+      }
+
+      // 管理者ページへのアクセスの場合はログインページにリダイレクト
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
   }
@@ -18,5 +27,9 @@ export function middleware(request: NextRequest) {
 
 // ミドルウェアを適用するパスを指定
 export const config = {
-  matcher: "/admin/artists/:path*",
+  matcher: [
+    "/admin/artists/:path*",
+    "/api/artists/:path*",
+    "/api/upload/:path*",
+  ],
 };
