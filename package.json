@@ -10,16 +10,20 @@
     "db:generate": "drizzle-kit generate:pg",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsc src/db/seed.ts --outDir dist/db && node dist/db/seed.js"
+    "db:seed": "tsc src/db/seed.ts --outDir dist/db && node dist/db/seed.js",
+    "migrate-images": "tsc src/scripts/migrate-images.ts --outDir dist --skipLibCheck --noEmit false --esModuleInterop && node dist/scripts/migrate-images.js",
+    "test-s3": "tsc src/scripts/test-s3-connection.ts --outDir dist --skipLibCheck --noEmit false --esModuleInterop && node dist/scripts/test-s3-connection.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.842.0",
+    "@aws-sdk/lib-storage": "^3.842.0",
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@types/nodemailer": "^6.4.17",
     "axios": "^1.9.0",
-    "dotenv": "^16.5.0",
+    "dotenv": "^16.6.1",
     "drizzle-orm": "^0.44.1",
     "framer-motion": "^6.5.1",
     "leaflet": "^1.9.4",
@@ -33,6 +37,7 @@
     "react-icons": "^5.5.0",
     "react-leaflet": "^4.2.1",
     "react-leaflet-markercluster": "^4.2.1",
+    "sharp": "^0.34.2",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {

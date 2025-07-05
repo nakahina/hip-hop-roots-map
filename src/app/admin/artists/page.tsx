@@ -25,6 +25,7 @@ import {
   Stack,
 } from "@chakra-ui/react";
 import { EditIcon, AddIcon, DeleteIcon } from "@chakra-ui/icons";
+import ImageUpload from "@/components/ImageUpload";
 
 const PAGE_SIZE = 25;
 
@@ -467,20 +468,45 @@ export default function ArtistsAdminPage() {
                     handleEditChange("spotifyTrackId", e.target.value)
                   }
                 />
-                <Input
-                  placeholder="オリジナル画像URL"
-                  value={editArtist.originalImage || ""}
-                  onChange={(e) =>
-                    handleEditChange("originalImage", e.target.value)
-                  }
-                />
-                <Input
-                  placeholder="サムネイル画像URL"
-                  value={editArtist.smallImage || ""}
-                  onChange={(e) =>
-                    handleEditChange("smallImage", e.target.value)
-                  }
-                />
+
+                {/* 画像アップロード */}
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" mb={2}>
+                    アーティスト画像:
+                  </Text>
+                  <ImageUpload
+                    artistName={editArtist.name}
+                    currentOriginalUrl={editArtist.originalImage || ""}
+                    currentSmallUrl={editArtist.smallImage || ""}
+                    onUploadSuccess={(originalUrl, smallUrl) => {
+                      handleEditChange("originalImage", originalUrl);
+                      handleEditChange("smallImage", smallUrl);
+                    }}
+                  />
+                </Box>
+
+                {/* 画像URLの手動入力（オプション） */}
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" mb={2}>
+                    または、URLを直接入力:
+                  </Text>
+                  <Input
+                    placeholder="オリジナル画像URL"
+                    value={editArtist.originalImage || ""}
+                    onChange={(e) =>
+                      handleEditChange("originalImage", e.target.value)
+                    }
+                    mb={2}
+                  />
+                  <Input
+                    placeholder="サムネイル画像URL"
+                    value={editArtist.smallImage || ""}
+                    onChange={(e) =>
+                      handleEditChange("smallImage", e.target.value)
+                    }
+                  />
+                </Box>
+
                 <Input
                   placeholder="YouTube URL"
                   value={editArtist.youtubeUrl || ""}
@@ -718,20 +744,45 @@ export default function ArtistsAdminPage() {
                   handleNewArtistChange("spotifyTrackId", e.target.value)
                 }
               />
-              <Input
-                placeholder="オリジナル画像URL"
-                value={newArtist.originalImage}
-                onChange={(e) =>
-                  handleNewArtistChange("originalImage", e.target.value)
-                }
-              />
-              <Input
-                placeholder="サムネイル画像URL"
-                value={newArtist.smallImage}
-                onChange={(e) =>
-                  handleNewArtistChange("smallImage", e.target.value)
-                }
-              />
+
+              {/* 画像アップロード */}
+              <Box>
+                <Text fontSize="sm" fontWeight="medium" mb={2}>
+                  アーティスト画像:
+                </Text>
+                <ImageUpload
+                  artistName={newArtist.name}
+                  currentOriginalUrl={newArtist.originalImage}
+                  currentSmallUrl={newArtist.smallImage}
+                  onUploadSuccess={(originalUrl, smallUrl) => {
+                    handleNewArtistChange("originalImage", originalUrl);
+                    handleNewArtistChange("smallImage", smallUrl);
+                  }}
+                />
+              </Box>
+
+              {/* 画像URLの手動入力（オプション） */}
+              <Box>
+                <Text fontSize="sm" fontWeight="medium" mb={2}>
+                  または、URLを直接入力:
+                </Text>
+                <Input
+                  placeholder="オリジナル画像URL"
+                  value={newArtist.originalImage}
+                  onChange={(e) =>
+                    handleNewArtistChange("originalImage", e.target.value)
+                  }
+                  mb={2}
+                />
+                <Input
+                  placeholder="サムネイル画像URL"
+                  value={newArtist.smallImage}
+                  onChange={(e) =>
+                    handleNewArtistChange("smallImage", e.target.value)
+                  }
+                />
+              </Box>
+
               <Input
                 placeholder="YouTube URL"
                 value={newArtist.youtubeUrl}
