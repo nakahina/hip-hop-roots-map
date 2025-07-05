@@ -14,7 +14,9 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ["i.scdn.co"],
+    domains: [
+      "hiphop-roots-map-local.s3.ap-northeast-1.amazonaws.com", // S3 バケット
+    ],
   },
 };
 
