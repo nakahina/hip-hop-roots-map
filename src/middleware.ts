@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // 開発環境では認証をバイパス
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+
   // セッションクッキーをチェック
   const isAuthenticated = request.cookies.has("admin_session");
 
@@ -27,9 +32,5 @@ export function middleware(request: NextRequest) {
 
 // ミドルウェアを適用するパスを指定
 export const config = {
-  matcher: [
-    "/admin/artists/:path*",
-    "/api/artists/:path*",
-    "/api/upload/:path*",
-  ],
+  matcher: ["/admin/artists/:path*", "/api/artists/:path*", "/api/upload"],
 };
