@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Flex,
@@ -102,6 +102,8 @@ export default function MapView() {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [activeTab, setActiveTab] = useState<"map" | "artists" | "menu">("map");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [displayedArtists, setDisplayedArtists] = useState<Artist[]>([]);
+  const [visibleCount, setVisibleCount] = useState(50); // 初期表示数
 
   // Drawer用ドラッグイベントハンドラ（SP用）
   const touchStartYRef = useRef(0);
@@ -151,23 +153,26 @@ export default function MapView() {
     touchEndYRef.current = 0;
   };
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setSearchQuery(searchTerm);
-  };
+  }, [searchTerm]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        handleSearch();
+      }
+    },
+    [handleSearch]
+  );
 
-  const handleArtistClick = (artist: Artist) => {
+  const handleArtistClick = useCallback((artist: Artist) => {
     setSelectedArtist(artist.name);
     setHoveredArtist(artist);
     if (mapRef.current) {
       mapRef.current.setView([artist.lat, artist.lng], 12);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const fetchArtists = async () => {
@@ -179,6 +184,13 @@ export default function MapView() {
           sort: sortOrder,
           withLocation: "true",
         });
+
+        // 初期表示時は日本のアーティストのみ表示（軽量化）
+        if (searchQuery.trim() === "" && selectedStyle === "all") {
+          queryParams.append("country", "Japan");
+          queryParams.append("limit", "200"); // 初期表示時のデータ量制限
+        }
+
         const response = await fetch(`/api/artists?${queryParams}`);
         if (!response.ok) {
           throw new Error("Failed to fetch artists");
@@ -206,8 +218,34 @@ export default function MapView() {
     fetchArtists();
   }, [searchQuery, selectedStyle, sortOrder]);
 
-  // 同じ座標のアーティストをグループ化して、オフセットを計算する関数
-  const calculateMarkerPositions = (artistsList: Artist[]) => {
+  // アーティストリストが更新されたときに表示する分だけを切り出す
+  useEffect(() => {
+    setDisplayedArtists(artists.slice(0, visibleCount));
+  }, [artists, visibleCount]);
+
+  // 検索クエリが変更されたときにvisibleCountをリセット
+  useEffect(() => {
+    setVisibleCount(50);
+  }, [searchQuery, selectedStyle, sortOrder]);
+
+  // スクロールイベントハンドラ（無限スクロール）
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.currentTarget;
+      const scrollTop = target.scrollTop;
+      const scrollHeight = target.scrollHeight;
+      const clientHeight = target.clientHeight;
+
+      // スクロールが底近くに達したら表示数を増やす
+      if (scrollHeight - scrollTop <= clientHeight * 1.5) {
+        setVisibleCount((prev) => Math.min(prev + 25, artists.length));
+      }
+    },
+    [artists.length]
+  );
+
+  // 同じ座標のアーティストをグループ化して、オフセットを計算する関数（メモ化）
+  const calculateMarkerPositions = useCallback((artistsList: Artist[]) => {
     const positionGroups = new Map<string, Artist[]>();
 
     // 同じ座標のアーティストをグループ化
@@ -250,10 +288,10 @@ export default function MapView() {
     });
 
     return offsetPositions;
-  };
+  }, []);
 
-  // アーティスト名からイニシャルを取得する関数
-  const getInitials = (name: string) => {
+  // アーティスト名からイニシャルを取得する関数（メモ化）
+  const getInitials = useCallback((name: string) => {
     const words = name.trim().split(/\s+/);
     if (words.length === 1) {
       // 単語が1つの場合は最初の2文字を返す
@@ -265,28 +303,59 @@ export default function MapView() {
         .map((word) => word.charAt(0).toUpperCase())
         .join("");
     }
-  };
+  }, []);
 
-  // カスタムdivIconを生成
-  const createAnimatedIcon = (artist: (typeof artists)[0]) => {
-    const initials = getInitials(artist.name);
+  // 軽量化されたマーカーアイコンを生成（メモ化）
+  const createLightweightIcon = useCallback(
+    (artist: Artist) => {
+      const initials = getInitials(artist.name);
 
-    // 画像がある場合とない場合でSVGの内容を変える
-    const svgContent = artist.smallImage
-      ? `<image href="${artist.smallImage}" width="44" height="44" x="2" y="2" clip-path="url(#circleClip)" preserveAspectRatio="xMidYMid slice"/>`
-      : `<text x="24" y="24" text-anchor="middle" dominant-baseline="central" fill="#000000" font-size="16" font-weight="bold" font-family="Arial, sans-serif">${initials}</text>`;
+      // 画像がある場合とない場合でHTMLの内容を変える
+      const content = artist.smallImage
+        ? `<img src="${artist.smallImage}" alt="${artist.name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid #FFD700;" />`
+        : `<div style="width: 64px; height: 64px; border-radius: 50%; background: #FFD700; color: #000; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; border: 3px solid #FFD700;">${initials}</div>`;
 
-    // 画像がない場合は黄色背景、ある場合は元の背景色
-    const backgroundColor = artist.smallImage ? "#2d2300" : "#FFD700";
+      return L.divIcon({
+        className: "lightweight-marker",
+        html: `<div style="position: relative; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px;">${content}</div>`,
+        iconSize: [96, 96],
+        iconAnchor: [48, 48],
+        popupAnchor: [0, -48],
+      });
+    },
+    [getInitials]
+  );
 
-    return L.divIcon({
-      className: "",
-      html: `<div class='animated-marker'><div class='ripple'></div><div class='circle'><svg width='64' height='64' viewBox='0 0 48 48' fill='none'><defs><clipPath id="circleClip"><circle cx='24' cy='24' r='22'/></clipPath></defs><circle cx='24' cy='24' r='23' stroke='#FFD700' stroke-width='2' fill='${backgroundColor}'/>${svgContent}</svg></div></div>`,
-      iconSize: [96, 96],
-      iconAnchor: [48, 48],
-      popupAnchor: [0, -48],
+  // マーカーの生成（メモ化）
+  const markers = useMemo(() => {
+    if (loading || artists.length === 0) return null;
+
+    const offsetPositions = calculateMarkerPositions(artists);
+    return artists.map((artist) => {
+      const key = `${artist.lat},${artist.lng}`;
+      const position =
+        offsetPositions.get(`${key}-${artist.name}`) ||
+        offsetPositions.get(key);
+      if (!position) return null;
+
+      return (
+        <Marker
+          key={artist.name}
+          position={[position.lat, position.lng]}
+          icon={createLightweightIcon(artist)}
+          eventHandlers={{
+            click: () => handleArtistClick(artist),
+          }}
+        />
+      );
     });
-  };
+  }, [
+    artists,
+    calculateMarkerPositions,
+    createLightweightIcon,
+    loading,
+    handleArtistClick,
+  ]);
 
   // Custom zoom/reset button component
   function MapControlButtons() {
@@ -388,6 +457,7 @@ export default function MapView() {
       overflowY="auto"
       transition="width 0.3s ease"
       position="relative"
+      onScroll={handleScroll}
     >
       {loading ? (
         <Text color="gray.400">Loading...</Text>
@@ -421,12 +491,12 @@ export default function MapView() {
                 </InputRightElement>
               </InputGroup>
               <Text fontSize="sm" color="gray.300" mb={2} letterSpacing="wider">
-                {artists.length} ARTISTS
+                {displayedArtists.length} / {artists.length} ARTISTS
               </Text>
             </>
           )}
           <VStack spacing={4} align="stretch">
-            {artists.map((artist) => (
+            {displayedArtists.map((artist) => (
               <Flex
                 key={artist.name}
                 p={isSidebarCollapsed ? 2 : 4}
@@ -624,13 +694,13 @@ export default function MapView() {
         </InputGroup>
         {/* アーティスト数 */}
         <Text fontSize="sm" color="gray.300" mb={1} letterSpacing="wider">
-          {artists.length} ARTISTS
+          {displayedArtists.length} / {artists.length} ARTISTS
         </Text>
       </Box>
       {/* スクロール可能なアーティストリスト */}
-      <Box flex="1" overflowY="auto" p={3}>
+      <Box flex="1" overflowY="auto" p={3} onScroll={handleScroll}>
         <VStack spacing={4} align="stretch" mb="120px" mt={2}>
-          {artists.map((artist) => (
+          {displayedArtists.map((artist) => (
             <Flex
               key={artist.name}
               p={4}
@@ -1050,46 +1120,30 @@ export default function MapView() {
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
-            {!loading && (
-              <MarkerClusterGroup
-                chunkedLoading
-                iconCreateFunction={(cluster: any) => {
-                  const count = cluster.getChildCount();
-                  return L.divIcon({
-                    html: `<div style="background-color: #2d2300; color: #FFD700; border: 2px solid #FFD700; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold;">${count}</div>`,
-                    className: "custom-cluster-icon",
-                    iconSize: L.point(40, 40),
-                  });
-                }}
-                spiderfyOnMaxZoom={false}
-                showCoverageOnHover={false}
-                zoomToBoundsOnClick={true}
-                removeOutsideVisibleBounds={true}
-                disableClusteringAtZoom={12}
-              >
-                {(() => {
-                  const offsetPositions = calculateMarkerPositions(artists);
-                  return artists.map((artist) => {
-                    const key = `${artist.lat},${artist.lng}`;
-                    const position =
-                      offsetPositions.get(`${key}-${artist.name}`) ||
-                      offsetPositions.get(key);
-                    if (!position) return null;
+            <MarkerClusterGroup
+              chunkedLoading
+              maxClusterRadius={80}
+              iconCreateFunction={(cluster: any) => {
+                const count = cluster.getChildCount();
+                let className = "cluster-small";
+                if (count > 50) className = "cluster-large";
+                else if (count > 20) className = "cluster-medium";
 
-                    return (
-                      <Marker
-                        key={artist.name}
-                        position={[position.lat, position.lng]}
-                        icon={createAnimatedIcon(artist)}
-                        eventHandlers={{
-                          click: () => handleArtistClick(artist),
-                        }}
-                      />
-                    );
-                  });
-                })()}
-              </MarkerClusterGroup>
-            )}
+                return L.divIcon({
+                  html: `<div style="background-color: #2d2300; color: #FFD700; border: 2px solid #FFD700; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px;">${count}</div>`,
+                  className: `custom-cluster-icon ${className}`,
+                  iconSize: L.point(35, 35),
+                });
+              }}
+              spiderfyOnMaxZoom={false}
+              showCoverageOnHover={false}
+              zoomToBoundsOnClick={true}
+              removeOutsideVisibleBounds={true}
+              disableClusteringAtZoom={14}
+              spiderfyDistanceMultiplier={1.2}
+            >
+              {markers}
+            </MarkerClusterGroup>
             {/* Custom Zoom Buttons */}
             <MapControlButtons />
           </MapContainer>
