@@ -2,8 +2,20 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // 開発環境の判定を改善
+  const isDevEnvironment =
+    process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === undefined ||
+    request.nextUrl.hostname === "localhost" ||
+    request.nextUrl.hostname === "127.0.0.1" ||
+    request.nextUrl.port === "3000" ||
+    request.nextUrl.port === "3001";
+
   // 開発環境では認証をバイパス
-  if (process.env.NODE_ENV === "development") {
+  if (isDevEnvironment) {
+    console.log(
+      `[Middleware] 開発環境を検出 - 認証をバイパス (${request.nextUrl.hostname}:${request.nextUrl.port})`
+    );
     return NextResponse.next();
   }
 
@@ -12,7 +24,7 @@ export function middleware(request: NextRequest) {
 
   // デバッグログ（本番環境でのトラブルシューティング用）
   console.log(
-    `[Middleware] Path: ${request.nextUrl.pathname}, Auth: ${isAuthenticated}`
+    `[Middleware] 本番環境 - Path: ${request.nextUrl.pathname}, Auth: ${isAuthenticated}`
   );
 
   // 管理者向けページとAPIのパスをチェック
