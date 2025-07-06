@@ -1241,7 +1241,7 @@ export default function MapView() {
                   >
                     YOUTUBE
                   </Text>
-                  <YouTubeEmbed videoId={hoveredArtist.youtubeUrl} />
+                  <YouTubeEmbed videoUrl={hoveredArtist.youtubeUrl} />
                 </Box>
               )}
               {(hoveredArtist.instagramUrl ||
@@ -1463,7 +1463,7 @@ export default function MapView() {
                       >
                         YOUTUBE
                       </Text>
-                      <YouTubeEmbed videoId={hoveredArtist.youtubeUrl} />
+                      <YouTubeEmbed videoUrl={hoveredArtist.youtubeUrl} />
                     </Box>
                   )}
                   {(hoveredArtist.instagramUrl ||

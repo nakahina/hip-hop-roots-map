@@ -6,6 +6,8 @@ import {
   text,
   timestamp,
   PgArray,
+  date,
+  integer,
 } from "drizzle-orm/pg-core";
 
 export const artists = pgTable("artists", {
@@ -26,6 +28,12 @@ export const artists = pgTable("artists", {
   youtubeChannelUrl: varchar("youtube_channel_url", { length: 255 }),
   tiktokUrl: varchar("tiktok_url", { length: 255 }),
   prefecture: varchar("prefecture", { length: 255 }).notNull(),
+  bioSummary: text("bio_summary"),
+  bioUrl: varchar("bio_url", { length: 500 }),
+  birthdate: date("birthdate"),
+  deathdate: date("deathdate"),
+  yearsActiveStart: integer("years_active_start"),
+  yearsActiveEnd: integer("years_active_end"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

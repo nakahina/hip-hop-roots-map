@@ -1,11 +1,11 @@
 import { Box } from "@chakra-ui/react";
 
 interface YouTubeEmbedProps {
-  videoId: string;
+  videoUrl: string;
 }
 
-export const YouTubeEmbed = ({ videoId }: YouTubeEmbedProps) => {
-  if (!videoId) return null;
+export const YouTubeEmbed = ({ videoUrl }: YouTubeEmbedProps) => {
+  if (!videoUrl) return null;
 
   return (
     <Box
@@ -24,7 +24,7 @@ export const YouTubeEmbed = ({ videoId }: YouTubeEmbedProps) => {
           height: "100%",
           border: 0,
         }}
-        src={`https://www.youtube.com/embed/${videoId}`}
+        src={videoUrl}
         title="YouTube video player"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen

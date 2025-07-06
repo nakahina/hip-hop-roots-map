@@ -8,6 +8,10 @@ import {
 } from "@/db/queries";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
+import {
+  mapProvidedDataToSchema,
+  validateProvidedData,
+} from "@/utils/data-mapper";
 
 export async function GET(request: Request) {
   try {
@@ -115,13 +119,36 @@ export async function DELETE(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const artist = await request.json();
+    const data = await request.json();
     const now = new Date();
+
+    // 提供されたデータ形式をチェック
+    const hasProvidedFormat = data.location && data.categories && data.bio;
+
+    let artistData;
+
+    if (hasProvidedFormat) {
+      // 提供されたデータ形式の場合、検証してからマッピング
+      const validationErrors = validateProvidedData(data);
+      if (validationErrors.length > 0) {
+        return NextResponse.json(
+          { error: "データ検証エラー", errors: validationErrors },
+          { status: 400 }
+        );
+      }
+
+      artistData = mapProvidedDataToSchema(data);
+    } else {
+      // 既存のデータ形式の場合
+      artistData = data;
+    }
+
     const newArtist = await createArtist({
-      ...artist,
+      ...artistData,
       createdAt: now,
       updatedAt: now,
     });
+
     return NextResponse.json(newArtist);
   } catch (error) {
     console.error("API POST error:", error);
