@@ -10,6 +10,11 @@ export function middleware(request: NextRequest) {
   // セッションクッキーをチェック
   const isAuthenticated = request.cookies.has("admin_session");
 
+  // デバッグログ（本番環境でのトラブルシューティング用）
+  console.log(
+    `[Middleware] Path: ${request.nextUrl.pathname}, Auth: ${isAuthenticated}`
+  );
+
   // 管理者向けページとAPIのパスをチェック
   if (
     request.nextUrl.pathname.startsWith("/admin/artists") ||
@@ -19,10 +24,19 @@ export function middleware(request: NextRequest) {
     if (!isAuthenticated) {
       // APIへのアクセスの場合は401エラーを返す
       if (request.nextUrl.pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+        console.log(
+          `[Middleware] API access denied: ${request.nextUrl.pathname}`
+        );
+        return NextResponse.json(
+          { error: "認証が必要です。管理者としてログインしてください。" },
+          { status: 401 }
+        );
       }
 
       // 管理者ページへのアクセスの場合はログインページにリダイレクト
+      console.log(
+        `[Middleware] Redirecting to login: ${request.nextUrl.pathname}`
+      );
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
   }
