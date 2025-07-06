@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadImageToS3, generateFileNameFromUrl } from "@/utils/s3-upload";
-import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("🔍 アップロードAPI開始 - sharpなしバージョン");
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const artistName = formData.get("artistName") as string;
@@ -53,8 +53,7 @@ export async function POST(request: NextRequest) {
       .replace(/_{2,}/g, "_")
       .replace(/^_|_$/g, "");
 
-    // オリジナル画像をS3にアップロード
-    const originalKey = `artists/${sanitizedArtistName}/original_${fileName}`;
+    // AWS S3設定
     const { Upload } = await import("@aws-sdk/lib-storage");
     const { S3Client } = await import("@aws-sdk/client-s3");
 
@@ -69,6 +68,7 @@ export async function POST(request: NextRequest) {
     const bucketName = process.env.S3_BUCKET_NAME!;
 
     // オリジナル画像をアップロード
+    const originalKey = `artists/${sanitizedArtistName}/original_${fileName}`;
     const originalUpload = new Upload({
       client: s3Client,
       params: {
@@ -82,29 +82,6 @@ export async function POST(request: NextRequest) {
 
     await originalUpload.done();
 
-    // 小さな画像を作成してアップロード
-    const smallImageBuffer = await sharp(buffer)
-      .resize(300, 300, {
-        fit: "cover",
-        position: "center",
-      })
-      .jpeg({ quality: 85 })
-      .toBuffer();
-
-    const smallKey = `artists/${sanitizedArtistName}/small_${fileName}`;
-    const smallUpload = new Upload({
-      client: s3Client,
-      params: {
-        Bucket: bucketName,
-        Key: smallKey,
-        Body: smallImageBuffer,
-        ContentType: "image/jpeg",
-        CacheControl: "max-age=31536000", // 1年
-      },
-    });
-
-    await smallUpload.done();
-
     // URLを生成
     const baseUrl =
       process.env.CLOUDFRONT_DOMAIN ||
@@ -113,16 +90,19 @@ export async function POST(request: NextRequest) {
       }.amazonaws.com`;
 
     const originalUrl = `${baseUrl}/${originalKey}`;
-    const smallUrl = `${baseUrl}/${smallKey}`;
+
+    // 一時的にサムネイルはオリジナルと同じURLを返す
+    const smallUrl = originalUrl;
 
     return NextResponse.json({
       success: true,
       originalUrl,
       smallUrl,
-      message: "画像のアップロードが完了しました",
+      message: "画像のアップロードが完了しました（オリジナルサイズのみ）",
+      note: "サムネイル生成機能は一時的に無効化されています",
     });
   } catch (error) {
-    console.error("画像アップロードエラー:", error);
+    console.error("🔍 画像アップロードエラー:", error);
     return NextResponse.json(
       {
         error: "画像のアップロード中にエラーが発生しました",
@@ -131,4 +111,13 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: "アップロードAPIは稼働中です",
+    method: "GET",
+    timestamp: new Date().toISOString(),
+    note: "sharp依存なしバージョン",
+  });
 }
