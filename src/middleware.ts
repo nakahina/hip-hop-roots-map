@@ -11,15 +11,10 @@ export function middleware(request: NextRequest) {
     request.nextUrl.port === "3000" ||
     request.nextUrl.port === "3001";
 
-  // 🚨 一時的に本番環境でも認証をバイパス（テスト用）
-  const bypassAuth = true; // テスト後はfalseに変更
-
-  // 開発環境または一時的バイパスの場合は認証をスキップ
-  if (isDevEnvironment || bypassAuth) {
+  // 開発環境では認証をバイパス
+  if (isDevEnvironment) {
     console.log(
-      `[Middleware] 認証をバイパス - 環境: ${
-        isDevEnvironment ? "dev" : "prod(テスト)"
-      } (${request.nextUrl.hostname}:${request.nextUrl.port})`
+      `[Middleware] 認証をバイパス - 環境: dev (${request.nextUrl.hostname}:${request.nextUrl.port})`
     );
     return NextResponse.next();
   }
