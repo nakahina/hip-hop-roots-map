@@ -185,11 +185,15 @@ export default function MapView() {
         const data = await response.json();
         setArtists(data);
 
-        if (data.length > 0 && mapRef.current) {
+        // 検索クエリがある場合のみ全体にフィットし、初期表示時は日本にフォーカス
+        if (data.length > 0 && mapRef.current && searchQuery.trim() !== "") {
           const bounds = L.latLngBounds(
             data.map((artist: Artist) => [artist.lat, artist.lng])
           );
           mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        } else if (mapRef.current && searchQuery.trim() === "") {
+          // 初期表示時は日本にフォーカス
+          mapRef.current.setView([35.6895, 139.6917], 6);
         }
       } catch (error) {
         console.error("Error fetching artists:", error);
@@ -320,7 +324,7 @@ export default function MapView() {
           variant="solid"
           size="md"
           isRound
-          onClick={() => map.setView([35.6895, 139.6917], 5)}
+          onClick={() => map.setView([35.6895, 139.6917], 6)}
         />
       </Flex>
     );
@@ -1119,7 +1123,13 @@ export default function MapView() {
         >
           <MapContainer
             center={[35.6895, 139.6917]}
-            zoom={5}
+            zoom={6}
+            minZoom={2}
+            maxBounds={[
+              [-85, -999],
+              [85, 999],
+            ]}
+            maxBoundsViscosity={1.0}
             style={{ height: "100%", width: "100%" }}
             zoomControl={false}
             ref={mapRef}
