@@ -92,6 +92,14 @@ export default function ImageUpload({
       formData.append("file", selectedFile);
       formData.append("artistName", artistName);
 
+      console.log("🔍 アップロード開始", {
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        fileType: selectedFile.type,
+        artistName: artistName,
+        uploadUrl: "/api/upload",
+      });
+
       // プログレスバーのアニメーション
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
@@ -100,20 +108,42 @@ export default function ImageUpload({
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        // 認証情報を含める
+        credentials: "include",
       });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
+      console.log("🔍 レスポンス情報", {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url,
+        ok: response.ok,
+      });
+
       // レスポンスの処理を改善
       if (!response.ok) {
         // 認証エラーの場合
         if (response.status === 401) {
-          throw new Error("認証が必要です。ログインしてください。");
+          console.log("🔍 認証エラー - ログインページにリダイレクト");
+          window.location.href = "/admin/login";
+          return;
+        }
+
+        // 405エラーの場合
+        if (response.status === 405) {
+          console.log("🔍 405エラー - Method Not Allowed");
+          throw new Error(
+            "サーバーがPOSTリクエストを受け付けていません。管理者に連絡してください。"
+          );
         }
 
         // その他のHTTPエラーの場合
         const errorText = await response.text();
+        console.log("🔍 エラーレスポンス", { errorText });
+
         let errorMessage = `サーバーエラー (${response.status})`;
 
         try {
@@ -130,6 +160,7 @@ export default function ImageUpload({
 
       // 成功レスポンスの処理
       const result: UploadResponse = await response.json();
+      console.log("🔍 アップロード成功", result);
 
       if (result.success) {
         onUploadSuccess(result.originalUrl, result.smallUrl);
@@ -150,7 +181,7 @@ export default function ImageUpload({
         throw new Error(result.error || "アップロードに失敗しました");
       }
     } catch (error) {
-      console.error("アップロードエラー:", error);
+      console.error("🔍 アップロードエラー詳細:", error);
       toast({
         title: "エラー",
         description:
