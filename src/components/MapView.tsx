@@ -78,6 +78,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { SpotifyEmbed } from "./SpotifyEmbed";
 import ContactForm from "./ContactForm";
+import Header from "./Header";
 
 const icon = new Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
@@ -293,7 +294,7 @@ export default function MapView() {
     return (
       <Flex
         position="absolute"
-        top={4}
+        top={19}
         right={4}
         zIndex={1000}
         direction="column"
@@ -340,7 +341,7 @@ export default function MapView() {
       borderTop="1px"
       borderColor="gray.700"
       p={2}
-      zIndex={1000}
+      zIndex={999}
       justify="space-around"
     >
       <IconButton
@@ -525,7 +526,7 @@ export default function MapView() {
   const renderMobileArtistsList = () => (
     <Box
       position="absolute"
-      top="60px"
+      top={0}
       left={0}
       right={0}
       bottom={0}
@@ -754,7 +755,7 @@ export default function MapView() {
   const renderAboutSection = () => (
     <Box
       position="absolute"
-      top="60px"
+      top={0}
       left={0}
       right={0}
       bottom={0}
@@ -896,7 +897,7 @@ export default function MapView() {
   const renderContactSection = () => (
     <Box
       position="absolute"
-      top="60px"
+      top={0}
       left={0}
       right={0}
       bottom={0}
@@ -976,107 +977,18 @@ export default function MapView() {
   return (
     <Box h="100vh" w="100vw" bg="gray.900">
       {/* Header */}
-      <Box
-        as="header"
-        h="60px"
-        w="100%"
-        bg="black"
-        px={4}
-        display="flex"
-        alignItems="center"
-        boxShadow="sm"
-        zIndex={10}
-        position="relative"
-        borderColor="gray.700"
-        borderWidth="1px"
-      >
-        <Flex w="100%" align="center" justify="space-between">
-          <Text
-            fontSize={{ base: "2xl", md: "3xl" }}
-            fontWeight="bold"
-            color="white"
-            letterSpacing="wider"
-            textTransform="uppercase"
-          >
-            <span
-              style={{
-                color: "#FDD835",
-                fontWeight: "bold",
-                letterSpacing: "wider",
-              }}
-            >
-              HIPHOP ROOTS
-            </span>
-          </Text>
-          <Box>
-            <HStack spacing={2} display={{ base: "none", md: "flex" }}>
-              <Button
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: "yellow.400", bg: "gray.700" }}
-                onClick={() => {
-                  setShowAbout(false);
-                  setShowContact(false);
-                }}
-                letterSpacing="wider"
-                display={{
-                  base: "none",
-                  md: "flex",
-                }}
-              >
-                MAP
-              </Button>
-              <Button
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: "yellow.400", bg: "gray.700" }}
-                onClick={() => {
-                  setShowAbout(true);
-                  setShowContact(false);
-                }}
-                letterSpacing="wider"
-                display={{
-                  base: "none",
-                  md: "flex",
-                }}
-              >
-                About
-              </Button>
-              <Button
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: "yellow.400", bg: "gray.700" }}
-                onClick={() => {
-                  setShowContact(true);
-                  setShowAbout(false);
-                }}
-                letterSpacing="wider"
-                display={{
-                  base: "none",
-                  md: "flex",
-                }}
-              >
-                Contact
-              </Button>
-            </HStack>
-            {isMobile && (
-              <IconButton
-                aria-label="Menu"
-                icon={<HamburgerIcon boxSize={6} />}
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: "yellow.400", bg: "gray.700" }}
-                onClick={onOpen}
-                ml={2}
-              />
-            )}
-          </Box>
-        </Flex>
-      </Box>
+      <Header
+        showAbout={showAbout}
+        showContact={showContact}
+        onSetShowAbout={setShowAbout}
+        onSetShowContact={setShowContact}
+        onOpen={onOpen}
+      />
 
       <Flex
         h={{ base: "calc(100vh - 60px - 60px)", md: "calc(100vh - 60px)" }}
         w="100vw"
+        mt="60px"
       >
         {/* About Section */}
         {showAbout && renderAboutSection()}
