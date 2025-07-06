@@ -247,15 +247,41 @@ export default function MapView() {
     return offsetPositions;
   };
 
+  // アーティスト名からイニシャルを取得する関数
+  const getInitials = (name: string) => {
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) {
+      // 単語が1つの場合は最初の2文字を返す
+      return words[0].substring(0, 2).toUpperCase();
+    } else {
+      // 複数の単語の場合は各単語の最初の文字を返す（最大2文字）
+      return words
+        .slice(0, 2)
+        .map((word) => word.charAt(0).toUpperCase())
+        .join("");
+    }
+  };
+
   // カスタムdivIconを生成
-  const createAnimatedIcon = (artist: (typeof artists)[0]) =>
-    L.divIcon({
+  const createAnimatedIcon = (artist: (typeof artists)[0]) => {
+    const initials = getInitials(artist.name);
+
+    // 画像がある場合とない場合でSVGの内容を変える
+    const svgContent = artist.smallImage
+      ? `<image href="${artist.smallImage}" width="44" height="44" x="2" y="2" clip-path="url(#circleClip)" preserveAspectRatio="xMidYMid slice"/>`
+      : `<text x="24" y="24" text-anchor="middle" dominant-baseline="central" fill="#000000" font-size="16" font-weight="bold" font-family="Arial, sans-serif">${initials}</text>`;
+
+    // 画像がない場合は黄色背景、ある場合は元の背景色
+    const backgroundColor = artist.smallImage ? "#2d2300" : "#FFD700";
+
+    return L.divIcon({
       className: "",
-      html: `<div class='animated-marker'><div class='ripple'></div><div class='circle'><svg width='64' height='64' viewBox='0 0 48 48' fill='none'><defs><clipPath id="circleClip"><circle cx='24' cy='24' r='22'/></clipPath></defs><circle cx='24' cy='24' r='23' stroke='#FFD700' stroke-width='2' fill='#2d2300'/><image href="${artist.smallImage}" width="44" height="44" x="2" y="2" clip-path="url(#circleClip)" preserveAspectRatio="xMidYMid slice"/></svg></div></div>`,
+      html: `<div class='animated-marker'><div class='ripple'></div><div class='circle'><svg width='64' height='64' viewBox='0 0 48 48' fill='none'><defs><clipPath id="circleClip"><circle cx='24' cy='24' r='22'/></clipPath></defs><circle cx='24' cy='24' r='23' stroke='#FFD700' stroke-width='2' fill='${backgroundColor}'/>${svgContent}</svg></div></div>`,
       iconSize: [96, 96],
       iconAnchor: [48, 48],
       popupAnchor: [0, -48],
     });
+  };
 
   // Custom zoom/reset button component
   function MapControlButtons() {
