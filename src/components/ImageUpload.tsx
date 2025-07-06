@@ -26,6 +26,8 @@ interface UploadResponse {
   originalUrl: string;
   smallUrl: string;
   message: string;
+  thumbnailGenerated: boolean;
+  sharpAvailable: boolean;
   error?: string;
 }
 
@@ -164,13 +166,28 @@ export default function ImageUpload({
 
       if (result.success) {
         onUploadSuccess(result.originalUrl, result.smallUrl);
+
+        // サムネイル生成の状況に応じてメッセージを調整
+        let toastDescription = result.message;
+        let toastStatus: "success" | "warning" = "success";
+
+        if (!result.sharpAvailable) {
+          toastDescription +=
+            "\n（注意: サムネイル生成機能は現在利用できません）";
+          toastStatus = "warning";
+        } else if (!result.thumbnailGenerated) {
+          toastDescription += "\n（注意: サムネイル生成に失敗しました）";
+          toastStatus = "warning";
+        }
+
         toast({
-          title: "成功",
-          description: result.message,
-          status: "success",
-          duration: 3000,
+          title: toastStatus === "success" ? "成功" : "部分的に成功",
+          description: toastDescription,
+          status: toastStatus,
+          duration: 5000,
           isClosable: true,
         });
+
         // リセット
         setSelectedFile(null);
         setPreviewUrl(null);
@@ -308,7 +325,7 @@ export default function ImageUpload({
       <Alert status="info" borderRadius="md">
         <AlertIcon />
         <Text fontSize="sm">
-          画像は自動的にオリジナルサイズと300x300のサムネイルが作成されます。
+          画像はオリジナルサイズでアップロードされます。可能な場合は300x300のサムネイルも自動生成されます。
           ファイルサイズは5MB以下にしてください。
         </Text>
       </Alert>

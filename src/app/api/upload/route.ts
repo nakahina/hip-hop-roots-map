@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// sharpの動的インポート関数
+async function loadSharp() {
+  try {
+    // 開発環境とVercel環境での異なるsharpの読み込み方法
+    const sharp = await import("sharp");
+    console.log("🔍 sharp読み込み成功 - バージョン:", sharp.default.versions);
+    return sharp.default;
+  } catch (error) {
+    console.warn(
+      "🔍 sharp読み込み失敗:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("🔍 アップロードAPI開始 - サムネイル生成付きバージョン");
@@ -83,60 +99,7 @@ export async function POST(request: NextRequest) {
     await originalUpload.done();
     console.log("🔍 オリジナル画像アップロード完了");
 
-    // サムネイル画像を生成してアップロード
-    let smallUrl = "";
-    try {
-      // sharpを動的にインポート
-      const sharp = await import("sharp");
-      console.log("🔍 sharp読み込み成功、サムネイル生成開始");
-
-      const smallImageBuffer = await sharp
-        .default(buffer)
-        .resize(300, 300, {
-          fit: "cover",
-          position: "center",
-        })
-        .jpeg({ quality: 85 })
-        .toBuffer();
-
-      const smallKey = `artists/${sanitizedArtistName}/small_${fileName}`;
-      const smallUpload = new Upload({
-        client: s3Client,
-        params: {
-          Bucket: bucketName,
-          Key: smallKey,
-          Body: smallImageBuffer,
-          ContentType: "image/jpeg",
-          CacheControl: "max-age=31536000", // 1年
-        },
-      });
-
-      await smallUpload.done();
-      console.log("🔍 サムネイル画像アップロード完了");
-
-      // サムネイルURLを生成
-      const baseUrl =
-        process.env.CLOUDFRONT_DOMAIN ||
-        `https://${bucketName}.s3.${
-          process.env.AWS_REGION || "ap-northeast-1"
-        }.amazonaws.com`;
-
-      smallUrl = `${baseUrl}/${smallKey}`;
-    } catch (sharpError) {
-      console.warn(
-        "🔍 サムネイル生成に失敗、オリジナル画像を使用:",
-        sharpError
-      );
-      // sharpエラーの場合はオリジナル画像と同じURLを使用
-      const baseUrl =
-        process.env.CLOUDFRONT_DOMAIN ||
-        `https://${bucketName}.s3.${
-          process.env.AWS_REGION || "ap-northeast-1"
-        }.amazonaws.com`;
-      smallUrl = `${baseUrl}/${originalKey}`;
-    }
-
-    // オリジナル画像のURLを生成
+    // ベースURLを生成
     const baseUrl =
       process.env.CLOUDFRONT_DOMAIN ||
       `https://${bucketName}.s3.${
@@ -144,13 +107,63 @@ export async function POST(request: NextRequest) {
       }.amazonaws.com`;
 
     const originalUrl = `${baseUrl}/${originalKey}`;
+    let smallUrl = originalUrl; // デフォルトはオリジナル画像を使用
+    let thumbnailGenerated = false;
+
+    // サムネイル画像を生成してアップロード
+    const sharp = await loadSharp();
+    if (sharp) {
+      try {
+        console.log("🔍 sharp読み込み成功、サムネイル生成開始");
+
+        const smallImageBuffer = await sharp(buffer)
+          .resize(300, 300, {
+            fit: "cover",
+            position: "center",
+          })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+
+        const smallKey = `artists/${sanitizedArtistName}/small_${fileName}`;
+        const smallUpload = new Upload({
+          client: s3Client,
+          params: {
+            Bucket: bucketName,
+            Key: smallKey,
+            Body: smallImageBuffer,
+            ContentType: "image/jpeg",
+            CacheControl: "max-age=31536000", // 1年
+          },
+        });
+
+        await smallUpload.done();
+        console.log("🔍 サムネイル画像アップロード完了");
+
+        smallUrl = `${baseUrl}/${smallKey}`;
+        thumbnailGenerated = true;
+      } catch (sharpError) {
+        console.warn(
+          "🔍 サムネイル生成に失敗、オリジナル画像を使用:",
+          sharpError
+        );
+        thumbnailGenerated = false;
+      }
+    } else {
+      console.warn(
+        "🔍 sharp読み込み失敗、オリジナル画像をサムネイルとして使用"
+      );
+      thumbnailGenerated = false;
+    }
 
     return NextResponse.json({
       success: true,
       originalUrl,
       smallUrl,
-      message: "画像のアップロードが完了しました",
-      thumbnailGenerated: smallUrl !== originalUrl,
+      message: thumbnailGenerated
+        ? "画像のアップロードとサムネイル生成が完了しました"
+        : "画像のアップロードが完了しました（サムネイル生成はスキップされました）",
+      thumbnailGenerated,
+      sharpAvailable: sharp !== null,
     });
   } catch (error) {
     console.error("🔍 画像アップロードエラー:", error);
@@ -165,10 +178,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const sharp = await loadSharp();
+
   return NextResponse.json({
     message: "アップロードAPIは稼働中です",
     method: "GET",
     timestamp: new Date().toISOString(),
     features: ["オリジナル画像アップロード", "サムネイル生成（300x300）"],
+    sharpAvailable: sharp !== null,
+    environment: process.env.NODE_ENV || "development",
   });
 }

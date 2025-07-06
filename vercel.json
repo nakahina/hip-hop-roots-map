@@ -1,12 +1,15 @@
 {
   "functions": {
     "src/app/api/upload/route.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 512
     }
   },
   "build": {
     "env": {
-      "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+      "SHARP_IGNORE_GLOBAL_LIBVIPS": "1",
+      "SHARP_IGNORE_GLOBAL_LIBVIPS_ERROR": "1"
     }
-  }
+  },
+  "installCommand": "npm install --include=optional"
 }
